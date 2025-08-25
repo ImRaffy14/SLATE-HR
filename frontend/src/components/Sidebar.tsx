@@ -24,6 +24,11 @@ function Sidebar() {
 
   const adminMenuItems = [
     { id: "users", path: "/users", icon: <Users size={20} />, label: "Users" },
+    { id: "competencies", path: "/competencies", icon: <Users size={20} />, label: "Competency Management" },
+    { id: "learning", path: "/learning", icon: <Users size={20} />, label: "Learning Management" },
+    { id: "performance", path: "/performance", icon: <Users size={20} />, label: "Performance Management" },
+    { id: "succession", path: "/succession", icon: <Users size={20} />, label: "Succession Planning" },
+    { id: "training", path: "/training", icon: <Users size={20} />, label: "Training Programs" },
   ];
 
   const menuItems = [
