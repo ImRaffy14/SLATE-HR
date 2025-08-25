@@ -6,7 +6,7 @@ import registerSocketHandlers from './sockets';
 
 const PORT = process.env.PORT
 
-const allowedOrigins = ['http://localhost:3002'];
+const allowedOrigins = ['http://localhost:6001', 'https://slate.imraffydev.com'];
 
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
