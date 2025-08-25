@@ -1,0 +1,41 @@
+# Dependency directories
+node_modules/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test and coverage
+coverage/
+__tests__/
+jest.config.js
+
+# TypeScript temporary files
+*.tsbuildinfo
+
+# Misc
+.git/
+.gitignore
+.dockerignore
+README.md

@@ -1,0 +1,33 @@
+### Register User
+##
+POST http://localhost:5000/api/v1/auth/register
+Content-Type: application/json
+
+{
+    "name": "test",
+    "email": "test@gmail.com",
+    "password": "test@123",
+    "role": "ADMIN"
+}
+
+### Login User
+##
+POST http://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "raffysolis123@gmail.com",
+    "password": "123"
+}
+
+###  User Profile
+##
+GET http://localhost:5001/api/auth/profile
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBiZDJlZDE4N2RkYTE2NDczNGVlZjQiLCJlbWFpbCI6InJhZmZ5c29saXMxMjNAZ21haWwuY29tIiwiaWF0IjoxNzQ1NjA3MDIxLCJleHAiOjE3NDU2OTM0MjF9.7g-XoGO4reoDQDuYvO95ZFx1zqJj3akQreBUbrRfpWA
+
+
+### Get Users
+##
+GET http://localhost:5001/api/account/users
+Content-Type: application/json
