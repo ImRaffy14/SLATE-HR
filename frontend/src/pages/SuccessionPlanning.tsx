@@ -71,12 +71,12 @@ const successionCandidates = [
 ]
 
 const potentialLevels = ["All", "High", "Medium", "Low"]
-const departments = ["All", "Technology", "Management", "Data Science", "HR", "Marketing"]
+// const departments = ["All", "Technology", "Management", "Data Science", "HR", "Marketing"]
 
 export default function SuccessionPlanning() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPotential, setSelectedPotential] = useState("All")
-  const [selectedDepartment, setSelectedDepartment] = useState("All")
+  const [_selectedDepartment, setSelectedDepartment] = useState("All")
 
   const filteredCandidates = successionCandidates.filter((candidate) => {
     const matchesSearch =
