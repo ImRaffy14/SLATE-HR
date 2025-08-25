@@ -18,5 +18,6 @@ export default defineConfig({
   preview: {
     port: 6001,
     host: true,
+    allowedHosts: ['slate.imraffydev.com']
   },
 })
