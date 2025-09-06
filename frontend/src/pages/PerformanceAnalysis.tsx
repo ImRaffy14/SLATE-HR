@@ -12,6 +12,10 @@ import {
   Users,
   Target,
   AlertTriangle,
+  Download,
+  Award,
+  BookOpen,
+  CheckCircle,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +26,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Mock data
 const performanceInsights = [
@@ -122,6 +131,24 @@ export default function PerformanceAnalysis() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRisk, setSelectedRisk] = useState("All")
 
+  const [viewDetailsModal, setViewDetailsModal] = useState<{ open: boolean; employee: any }>({
+    open: false,
+    employee: null,
+  })
+  const [performanceReportModal, setPerformanceReportModal] = useState<{ open: boolean; employee: any }>({
+    open: false,
+    employee: null,
+  })
+  const [generateReportModal, setGenerateReportModal] = useState(false)
+  const [takeActionModal, setTakeActionModal] = useState<{ open: boolean; recommendation: any }>({
+    open: false,
+    recommendation: null,
+  })
+  const [trainingPlanModal, setTrainingPlanModal] = useState<{ open: boolean; skill: any }>({
+    open: false,
+    skill: null,
+  })
+
   const filteredInsights = performanceInsights.filter((insight) => {
     const matchesSearch =
       insight.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -182,7 +209,10 @@ export default function PerformanceAnalysis() {
             AI-Powered
           </Badge>
         </div>
-        <Button className="gap-2 bg-gray-800 hover:bg-gray-900 text-white border border-gray-700">
+        <Button
+          className="gap-2 bg-gray-800 hover:bg-gray-900 text-white border border-gray-700"
+          onClick={() => setGenerateReportModal(true)}
+        >
           <BarChart3 size={16} />
           Generate Report
         </Button>
@@ -373,11 +403,17 @@ export default function PerformanceAnalysis() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
-                            <DropdownMenuItem className="gap-2 text-white hover:bg-gray-700">
+                            <DropdownMenuItem
+                              className="gap-2 text-white hover:bg-gray-700"
+                              onClick={() => setViewDetailsModal({ open: true, employee: insight })}
+                            >
                               <Eye size={16} />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-white hover:bg-gray-700">
+                            <DropdownMenuItem
+                              className="gap-2 text-white hover:bg-gray-700"
+                              onClick={() => setPerformanceReportModal({ open: true, employee: insight })}
+                            >
                               <BarChart3 size={16} />
                               Performance Report
                             </DropdownMenuItem>
@@ -414,7 +450,11 @@ export default function PerformanceAnalysis() {
                     <p className="text-gray-300 text-sm mb-2">{rec.reason}</p>
                     <p className="text-blue-400 text-sm font-medium">{rec.action}</p>
                   </div>
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => setTakeActionModal({ open: true, recommendation: rec })}
+                  >
                     Take Action
                   </Button>
                 </div>
@@ -465,7 +505,11 @@ export default function PerformanceAnalysis() {
                         <Badge className={getPriorityBadgeColor(skill.priority)}>{skill.priority}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => setTrainingPlanModal({ open: true, skill })}
+                        >
                           Create Training Plan
                         </Button>
                       </TableCell>
@@ -477,6 +521,476 @@ export default function PerformanceAnalysis() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* View Details Modal */}
+      <Dialog open={viewDetailsModal.open} onOpenChange={(open) => setViewDetailsModal({ open, employee: null })}>
+        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto mx-2 sm:mx-4">
+          <DialogHeader>
+            <DialogTitle className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <Avatar className="w-12 h-12">
+                <AvatarImage src="/placeholder.svg" />
+                <AvatarFallback className="bg-gray-600 text-white">
+                  {viewDetailsModal.employee?.employee?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="text-lg sm:text-xl">{viewDetailsModal.employee?.employee}</div>
+                <div className="text-sm text-gray-400">{viewDetailsModal.employee?.role}</div>
+              </div>
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">Detailed performance analysis and insights</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+            <Card className="bg-gray-700 border-gray-600">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
+                  <div>
+                    <p className="text-xs sm:text-sm text-gray-300">Performance Score</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">
+                      {viewDetailsModal.employee?.performanceScore}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-700 border-gray-600">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  <Award className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400" />
+                  <div>
+                    <p className="text-xs sm:text-sm text-gray-300">Promotion Readiness</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">
+                      {viewDetailsModal.employee?.promotionReadiness}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-700 border-gray-600 sm:col-span-2 lg:col-span-1">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  <Target className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
+                  <div>
+                    <p className="text-xs sm:text-sm text-gray-300">Training Effectiveness</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">
+                      {viewDetailsModal.employee?.trainingEffectiveness}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-4 sm:mt-6 space-y-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Performance Trends</h3>
+              <div className="bg-gray-700 p-3 sm:p-4 rounded-lg">
+                <p className="text-sm sm:text-base text-gray-300">
+                  Performance has been consistently high over the past 6 months with a slight upward trend in Q4.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Key Strengths</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Badge className="bg-green-600 text-white justify-start text-xs sm:text-sm py-1">
+                  Technical Excellence
+                </Badge>
+                <Badge className="bg-green-600 text-white justify-start text-xs sm:text-sm py-1">
+                  Team Collaboration
+                </Badge>
+                <Badge className="bg-green-600 text-white justify-start text-xs sm:text-sm py-1">Problem Solving</Badge>
+                <Badge className="bg-green-600 text-white justify-start text-xs sm:text-sm py-1">Initiative</Badge>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Development Areas</h3>
+              <div className="space-y-2">
+                {Array.from({ length: viewDetailsModal.employee?.skillGaps || 0 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                    <span className="text-sm sm:text-base text-gray-300">Leadership Skills</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Performance Report Modal */}
+      <Dialog
+        open={performanceReportModal.open}
+        onOpenChange={(open) => setPerformanceReportModal({ open, employee: null })}
+      >
+        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-[95vw] sm:max-w-xl lg:max-w-2xl mx-2 sm:mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              Performance Report - {performanceReportModal.employee?.employee}
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">Generate a comprehensive performance report</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4 sm:mt-6">
+            <div>
+              <Label className="text-white text-sm sm:text-base">Report Type</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select report type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="quarterly">Quarterly Review</SelectItem>
+                  <SelectItem value="annual">Annual Review</SelectItem>
+                  <SelectItem value="promotion">Promotion Assessment</SelectItem>
+                  <SelectItem value="development">Development Plan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Time Period</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select time period" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="last3months">Last 3 Months</SelectItem>
+                  <SelectItem value="last6months">Last 6 Months</SelectItem>
+                  <SelectItem value="lastyear">Last Year</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Include Sections</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="goals" defaultChecked />
+                  <Label htmlFor="goals" className="text-xs sm:text-sm text-gray-300">
+                    Goals & Objectives
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="skills" defaultChecked />
+                  <Label htmlFor="skills" className="text-xs sm:text-sm text-gray-300">
+                    Skills Assessment
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="feedback" defaultChecked />
+                  <Label htmlFor="feedback" className="text-xs sm:text-sm text-gray-300">
+                    360° Feedback
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="development" defaultChecked />
+                  <Label htmlFor="development" className="text-xs sm:text-sm text-gray-300">
+                    Development Plan
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                <Download className="h-4 w-4 mr-2" />
+                Generate PDF
+              </Button>
+              <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-700 bg-transparent">
+                Preview
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Report Modal */}
+      <Dialog open={generateReportModal} onOpenChange={setGenerateReportModal}>
+        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-[95vw] sm:max-w-md lg:max-w-lg mx-2 sm:mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Generate Performance Report</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Create organization-wide performance analytics report
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4 sm:mt-6">
+            <div>
+              <Label className="text-white text-sm sm:text-base">Report Scope</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select scope" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="all">All Employees</SelectItem>
+                  <SelectItem value="department">By Department</SelectItem>
+                  <SelectItem value="team">By Team</SelectItem>
+                  <SelectItem value="role">By Role</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Format</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="pdf">PDF Report</SelectItem>
+                  <SelectItem value="excel">Excel Spreadsheet</SelectItem>
+                  <SelectItem value="dashboard">Interactive Dashboard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Generate Report
+              </Button>
+              <Button
+                variant="outline"
+                className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
+                onClick={() => setGenerateReportModal(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Take Action Modal */}
+      <Dialog open={takeActionModal.open} onOpenChange={(open) => setTakeActionModal({ open, recommendation: null })}>
+        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-[95vw] sm:max-w-xl lg:max-w-2xl mx-2 sm:mx-4">
+          <DialogHeader>
+            <DialogTitle className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-lg sm:text-xl">
+              {getRecommendationIcon(takeActionModal.recommendation?.type)}
+              <span>Take Action - {takeActionModal.recommendation?.employee}</span>
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Implement the AI recommendation for this employee
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4 sm:mt-6">
+            <div className="bg-gray-700 p-3 sm:p-4 rounded-lg">
+              <h3 className="font-semibold text-white mb-2 text-sm sm:text-base">Recommendation</h3>
+              <p className="text-gray-300 mb-2 text-sm sm:text-base">{takeActionModal.recommendation?.reason}</p>
+              <p className="text-blue-400 font-medium text-sm sm:text-base">{takeActionModal.recommendation?.action}</p>
+              <Badge variant="outline" className="border-gray-500 text-gray-300 text-xs mt-2">
+                {takeActionModal.recommendation?.confidence}% confidence
+              </Badge>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Action Plan</Label>
+              <Textarea
+                placeholder="Describe the specific steps you'll take to implement this recommendation..."
+                className="bg-gray-700 border-gray-600 text-white mt-2 text-sm sm:text-base"
+                rows={4}
+              />
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Timeline</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select timeline" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="immediate">Immediate (1-2 weeks)</SelectItem>
+                  <SelectItem value="short">Short-term (1 month)</SelectItem>
+                  <SelectItem value="medium">Medium-term (3 months)</SelectItem>
+                  <SelectItem value="long">Long-term (6+ months)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Assign To</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="manager">Direct Manager</SelectItem>
+                  <SelectItem value="hr">HR Team</SelectItem>
+                  <SelectItem value="learning">Learning & Development</SelectItem>
+                  <SelectItem value="self">Self (Employee)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Implement Action
+              </Button>
+              <Button
+                variant="outline"
+                className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
+                onClick={() => setTakeActionModal({ open: false, recommendation: null })}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Training Plan Modal */}
+      <Dialog open={trainingPlanModal.open} onOpenChange={(open) => setTrainingPlanModal({ open, skill: null })}>
+        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[95vh] overflow-y-auto mx-2 sm:mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              Create Training Plan - {trainingPlanModal.skill?.skill}
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Design a comprehensive training program to address skill gaps
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-300">Employees Affected</p>
+                      <p className="text-lg sm:text-xl font-bold text-white">
+                        {trainingPlanModal.skill?.employeesAffected}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" />
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-300">Avg Gap Level</p>
+                      <p className="text-lg sm:text-xl font-bold text-white">
+                        {trainingPlanModal.skill?.avgGap?.toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-700 border-gray-600 sm:col-span-2 lg:col-span-1">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-3">
+                    <Target className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" />
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-300">Priority</p>
+                      <Badge className={getPriorityBadgeColor(trainingPlanModal.skill?.priority)}>
+                        {trainingPlanModal.skill?.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Training Program Name</Label>
+              <Input
+                placeholder={`${trainingPlanModal.skill?.skill} Mastery Program`}
+                className="bg-gray-700 border-gray-600 text-white mt-2"
+              />
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Training Format</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="online" defaultChecked />
+                  <Label htmlFor="online" className="text-xs sm:text-sm text-gray-300">
+                    Online Courses
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="workshop" />
+                  <Label htmlFor="workshop" className="text-xs sm:text-sm text-gray-300">
+                    Workshops
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="mentoring" />
+                  <Label htmlFor="mentoring" className="text-xs sm:text-sm text-gray-300">
+                    Mentoring
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="certification" />
+                  <Label htmlFor="certification" className="text-xs sm:text-sm text-gray-300">
+                    Certification
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Duration</Label>
+              <Select>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="2weeks">2 Weeks</SelectItem>
+                  <SelectItem value="1month">1 Month</SelectItem>
+                  <SelectItem value="3months">3 Months</SelectItem>
+                  <SelectItem value="6months">6 Months</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Learning Objectives</Label>
+              <Textarea
+                placeholder="Define what participants will learn and achieve..."
+                className="bg-gray-700 border-gray-600 text-white mt-2 text-sm sm:text-base"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label className="text-white text-sm sm:text-base">Success Metrics</Label>
+              <Textarea
+                placeholder="How will you measure the success of this training program..."
+                className="bg-gray-700 border-gray-600 text-white mt-2 text-sm sm:text-base"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Create Training Plan
+              </Button>
+              <Button
+                variant="outline"
+                className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
+                onClick={() => setTrainingPlanModal({ open: false, skill: null })}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

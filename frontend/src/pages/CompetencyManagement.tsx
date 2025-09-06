@@ -14,20 +14,21 @@ import {
   Truck,
   Users,
   Trash2,
+  ClipboardList,
+  BookOpen,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { ConfirmationModal } from "@/components/ConfirmationModal"
 import {
   Bar,
   BarChart,
@@ -51,74 +52,86 @@ const competencies = [
     id: 1,
     name: "Commercial Driving (CDL)",
     category: "Safety & Compliance",
+    description: "Commercial driver's license and safe driving practices",
     requiredLevel: 5,
-    currentLevel: 4,
-    gap: 1,
-    employee: "Mike Rodriguez",
-    role: "Long-Haul Driver",
-    lastAssessed: "2024-01-15",
-    certificationExpiry: "2024-12-31",
+    totalEmployees: 12,
+    assessedEmployees: 10,
+    avgCurrentLevel: 4.2,
+    createdDate: "2024-01-01",
+    assessments: [
+      {
+        id: 1,
+        employeeName: "Mike Rodriguez",
+        employeeRole: "Long-Haul Driver",
+        currentLevel: 4,
+        lastAssessed: "2024-01-15",
+        certificationExpiry: "2024-12-31",
+        notes: "Excellent driving record, needs refresher on new regulations",
+      },
+      {
+        id: 2,
+        employeeName: "John Smith",
+        employeeRole: "Local Driver",
+        currentLevel: 5,
+        lastAssessed: "2024-01-20",
+        certificationExpiry: "2024-11-30",
+        notes: "Fully proficient, mentor for new drivers",
+      },
+    ],
   },
   {
     id: 2,
     name: "Route Optimization",
     category: "Operations",
+    description: "Efficient route planning and logistics coordination",
     requiredLevel: 4,
-    currentLevel: 3,
-    gap: 1,
-    employee: "Sarah Johnson",
-    role: "Dispatcher",
-    lastAssessed: "2024-01-10",
-    certificationExpiry: null,
+    totalEmployees: 8,
+    assessedEmployees: 6,
+    avgCurrentLevel: 3.5,
+    createdDate: "2024-01-05",
+    assessments: [
+      {
+        id: 3,
+        employeeName: "Sarah Johnson",
+        employeeRole: "Dispatcher",
+        currentLevel: 3,
+        lastAssessed: "2024-01-10",
+        certificationExpiry: null,
+        notes: "Good understanding, needs advanced training",
+      },
+    ],
   },
   {
     id: 3,
     name: "Warehouse Management",
     category: "Operations",
+    description: "Inventory management and warehouse operations",
     requiredLevel: 4,
-    currentLevel: 4,
-    gap: 0,
-    employee: "David Chen",
-    role: "Warehouse Supervisor",
-    lastAssessed: "2024-01-20",
-    certificationExpiry: null,
+    totalEmployees: 15,
+    assessedEmployees: 12,
+    avgCurrentLevel: 3.8,
+    createdDate: "2024-01-03",
+    assessments: [
+      {
+        id: 4,
+        employeeName: "David Chen",
+        employeeRole: "Warehouse Supervisor",
+        currentLevel: 4,
+        lastAssessed: "2024-01-20",
+        certificationExpiry: null,
+        notes: "Excellent leadership and organization skills",
+      },
+    ],
   },
-  {
-    id: 4,
-    name: "DOT Regulations",
-    category: "Safety & Compliance",
-    requiredLevel: 5,
-    currentLevel: 3,
-    gap: 2,
-    employee: "Lisa Thompson",
-    role: "Safety Manager",
-    lastAssessed: "2024-01-05",
-    certificationExpiry: "2024-06-30",
-  },
-  {
-    id: 5,
-    name: "Heavy Equipment Operation",
-    category: "Technical",
-    requiredLevel: 4,
-    currentLevel: 2,
-    gap: 2,
-    employee: "James Wilson",
-    role: "Forklift Operator",
-    lastAssessed: "2024-01-12",
-    certificationExpiry: "2024-08-15",
-  },
-  {
-    id: 6,
-    name: "Customer Service",
-    category: "Soft Skills",
-    requiredLevel: 3,
-    currentLevel: 4,
-    gap: 0,
-    employee: "Maria Garcia",
-    role: "Customer Relations",
-    lastAssessed: "2024-01-18",
-    certificationExpiry: null,
-  },
+]
+
+const employees = [
+  { id: 1, name: "Mike Rodriguez", role: "Long-Haul Driver" },
+  { id: 2, name: "Sarah Johnson", role: "Dispatcher" },
+  { id: 3, name: "David Chen", role: "Warehouse Supervisor" },
+  { id: 4, name: "Lisa Thompson", role: "Safety Manager" },
+  { id: 5, name: "James Wilson", role: "Forklift Operator" },
+  { id: 6, name: "Maria Garcia", role: "Customer Relations" },
 ]
 
 const skillGapData = [
@@ -151,96 +164,236 @@ export default function CompetencyManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isCreateCompetencyModalOpen, setIsCreateCompetencyModalOpen] = useState(false)
+  const [isEditCompetencyModalOpen, setIsEditCompetencyModalOpen] = useState(false)
+  const [isViewCompetencyModalOpen, setIsViewCompetencyModalOpen] = useState(false)
+  const [isDeleteCompetencyModalOpen, setIsDeleteCompetencyModalOpen] = useState(false)
+  const [isAssessmentsModalOpen, setIsAssessmentsModalOpen] = useState(false)
+  const [isCreateAssessmentModalOpen, setIsCreateAssessmentModalOpen] = useState(false)
+  const [isEditAssessmentModalOpen, setIsEditAssessmentModalOpen] = useState(false)
+  const [isDeleteAssessmentModalOpen, setIsDeleteAssessmentModalOpen] = useState(false)
+
   const [selectedCompetency, setSelectedCompetency] = useState<any>(null)
-  const [formData, setFormData] = useState({
-    employee: "",
-    competency: "",
+  const [selectedAssessment, setSelectedAssessment] = useState<any>(null)
+
+  const [competencyFormData, setCompetencyFormData] = useState({
+    name: "",
     category: "",
-    currentLevel: 1,
+    description: "",
     requiredLevel: 1,
+  })
+
+  const [assessmentFormData, setAssessmentFormData] = useState({
+    employeeName: "",
+    employeeRole: "",
+    currentLevel: 1,
     notes: "",
+    certificationExpiry: "",
+  })
+
+  const [isCourseEnrollmentModalOpen, setIsCourseEnrollmentModalOpen] = useState(false)
+  const [selectedAssessmentForCourse, setSelectedAssessmentForCourse] = useState<any>(null)
+  const [courseEnrollmentForm, setCourseEnrollmentForm] = useState({
+    courseTitle: "",
+    courseProvider: "",
+    courseDuration: "",
+    courseDescription: "",
+    startDate: "",
+    priority: "medium",
   })
 
   const filteredCompetencies = competencies.filter((comp) => {
-    const matchesSearch =
-      comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      comp.employee.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = comp.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === "All" || comp.category === selectedCategory
     return matchesSearch && matchesCategory
   })
 
-  const getGapBadgeColor = (gap: number) => {
-    if (gap === 0) return "bg-green-600 text-white"
-    if (gap === 1) return "bg-yellow-600 text-white"
+  const getGapBadgeColor = (avgLevel: number, requiredLevel: number) => {
+    const gap = requiredLevel - avgLevel
+    if (gap <= 0.5) return "bg-green-600 text-white"
+    if (gap <= 1) return "bg-yellow-600 text-white"
     return "bg-red-600 text-white"
   }
 
-  const handleAddClick = () => {
-    setFormData({
-      employee: "",
-      competency: "",
+  const createCompetency = async (data: any) => {
+    console.log("Creating competency:", data)
+    // API call would go here
+  }
+
+  const updateCompetency = async (id: number, data: any) => {
+    console.log("Updating competency:", id, data)
+    // API call would go here
+  }
+
+  const deleteCompetency = async (id: number) => {
+    console.log("Deleting competency:", id)
+    // API call would go here
+  }
+
+  const createAssessment = async (competencyId: number, data: any) => {
+    console.log("Creating assessment for competency:", competencyId, data)
+    // API call would go here
+  }
+
+  const updateAssessment = async (assessmentId: number, data: any) => {
+    console.log("Updating assessment:", assessmentId, data)
+    // API call would go here
+  }
+
+  const deleteAssessment = async (assessmentId: number) => {
+    console.log("Deleting assessment:", assessmentId)
+    // API call would go here
+  }
+
+  const getCompetencyAssessments = async (competencyId: number) => {
+    console.log("Fetching assessments for competency:", competencyId)
+    // API call would go here
+    return competencies.find((c) => c.id === competencyId)?.assessments || []
+  }
+
+  const handleCreateCompetencyClick = () => {
+    setCompetencyFormData({
+      name: "",
       category: "",
-      currentLevel: 1,
+      description: "",
       requiredLevel: 1,
-      notes: "",
     })
-    setIsAddModalOpen(true)
+    setIsCreateCompetencyModalOpen(true)
   }
 
-  const handleEditClick = (competency: any) => {
+  const handleEditCompetencyClick = (competency: any) => {
     setSelectedCompetency(competency)
-    setFormData({
-      employee: competency.employee,
-      competency: competency.name,
+    setCompetencyFormData({
+      name: competency.name,
       category: competency.category,
-      currentLevel: competency.currentLevel,
+      description: competency.description,
       requiredLevel: competency.requiredLevel,
-      notes: "",
     })
-    setIsEditModalOpen(true)
+    setIsEditCompetencyModalOpen(true)
   }
 
-  const handleViewClick = (competency: any) => {
+  const handleViewCompetencyClick = (competency: any) => {
     setSelectedCompetency(competency)
-    setIsViewModalOpen(true)
+    setIsViewCompetencyModalOpen(true)
   }
 
-  const handleDeleteClick = (competency: any) => {
+  const handleDeleteCompetencyClick = (competency: any) => {
     setSelectedCompetency(competency)
-    setIsDeleteModalOpen(true)
+    setIsDeleteCompetencyModalOpen(true)
   }
 
-  const handleSave = () => {
-    // Mock save functionality
-    console.log("Saving competency assessment:", formData)
-    setIsAddModalOpen(false)
-    setIsEditModalOpen(false)
+  const handleViewAssessmentsClick = (competency: any) => {
+    setSelectedCompetency(competency)
+    setIsAssessmentsModalOpen(true)
   }
 
-  const handleDelete = () => {
-    // Mock delete functionality
-    console.log("Deleting competency:", selectedCompetency)
-    setIsDeleteModalOpen(false)
+  const handleCreateAssessmentClick = () => {
+    setAssessmentFormData({
+      employeeName: "",
+      employeeRole: "",
+      currentLevel: 1,
+      notes: "",
+      certificationExpiry: "",
+    })
+    setIsCreateAssessmentModalOpen(true)
+  }
+
+  const handleEditAssessmentClick = (assessment: any) => {
+    setSelectedAssessment(assessment)
+    setAssessmentFormData({
+      employeeName: assessment.employeeName,
+      employeeRole: assessment.employeeRole,
+      currentLevel: assessment.currentLevel,
+      notes: assessment.notes,
+      certificationExpiry: assessment.certificationExpiry || "",
+    })
+    setIsEditAssessmentModalOpen(true)
+  }
+
+  const handleDeleteAssessmentClick = (assessment: any) => {
+    setSelectedAssessment(assessment)
+    setIsDeleteAssessmentModalOpen(true)
+  }
+
+  const handleEnrollInCourseClick = (assessment: any) => {
+    setSelectedAssessmentForCourse(assessment)
+    setIsCourseEnrollmentModalOpen(true)
+  }
+
+  const handleCourseEnrollmentSubmit = () => {
+    const enrollmentData = {
+      employeeId: selectedAssessmentForCourse?.employeeId,
+      employeeName: selectedAssessmentForCourse?.employeeName,
+      competencyId: selectedCompetency?.id,
+      competencyName: selectedCompetency?.name,
+      currentLevel: selectedAssessmentForCourse?.currentLevel,
+      requiredLevel: selectedCompetency?.requiredLevel,
+      course: courseEnrollmentForm,
+      enrollmentDate: new Date().toISOString(),
+    }
+
+    enrollEmployeeInCourse(enrollmentData)
+    setIsCourseEnrollmentModalOpen(false)
+    setCourseEnrollmentForm({
+      courseTitle: "",
+      courseProvider: "",
+      courseDuration: "",
+      courseDescription: "",
+      startDate: "",
+      priority: "medium",
+    })
+    setSelectedAssessmentForCourse(null)
+  }
+
+  const handleSubmitCompetency = async () => {
+    if (selectedCompetency) {
+      await updateCompetency(selectedCompetency.id, competencyFormData)
+      setIsEditCompetencyModalOpen(false)
+    } else {
+      await createCompetency(competencyFormData)
+      setIsCreateCompetencyModalOpen(false)
+    }
+  }
+
+  const handleSubmitAssessment = async () => {
+    if (selectedAssessment) {
+      await updateAssessment(selectedAssessment.id, assessmentFormData)
+      setIsEditAssessmentModalOpen(false)
+    } else {
+      await createAssessment(selectedCompetency.id, assessmentFormData)
+      setIsCreateAssessmentModalOpen(false)
+    }
+  }
+
+  const handleDeleteCompetencyConfirm = async () => {
+    await deleteCompetency(selectedCompetency.id)
+    setIsDeleteCompetencyModalOpen(false)
+  }
+
+  const handleDeleteAssessmentConfirm = async () => {
+    await deleteAssessment(selectedAssessment.id)
+    setIsDeleteAssessmentModalOpen(false)
+  }
+
+  const enrollEmployeeInCourse = async (enrollmentData: any) => {
+    console.log("Enrolling employee in course:", enrollmentData)
+    // API call would go here
   }
 
   return (
-    <div className="space-y-6">
+    <div className="">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Competency Management</h2>
-          <p className="text-gray-300">Freight & Logistics Skills Assessment</p>
+          <p className="text-gray-300">Manage competencies and employee assessments</p>
         </div>
         <Button
           className="gap-2 bg-gray-800 hover:bg-gray-900 text-white border border-gray-700"
-          onClick={handleAddClick}
+          onClick={handleCreateCompetencyClick}
         >
           <Plus size={16} />
-          New Assessment
+          Create Competency
         </Button>
       </div>
 
@@ -405,15 +558,15 @@ export default function CompetencyManagement() {
       {/* Filters */}
       <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
         <CardHeader>
-          <CardTitle className="text-white">Assessment Filters</CardTitle>
-          <CardDescription className="text-gray-300">Filter and search competency assessments</CardDescription>
+          <CardTitle className="text-white">Competency Filters</CardTitle>
+          <CardDescription className="text-gray-300">Filter and search competencies</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search employees or skills..."
+                placeholder="Search competencies..."
                 className="pl-9 bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -457,22 +610,21 @@ export default function CompetencyManagement() {
         </CardContent>
       </Card>
 
-      {/* Competencies Table */}
       <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
         <CardHeader>
-          <CardTitle className="text-white">Individual Competency Assessments</CardTitle>
-          <CardDescription className="text-gray-300">{filteredCompetencies.length} assessments found</CardDescription>
+          <CardTitle className="text-white">Competencies</CardTitle>
+          <CardDescription className="text-gray-300">{filteredCompetencies.length} competencies found</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="border-gray-600">
-                <TableHead className="text-gray-300 font-semibold">Employee</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Competency</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Category</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Progress</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Gap Status</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Last Assessed</TableHead>
+                <TableHead className="text-gray-300 font-semibold">Required Level</TableHead>
+                <TableHead className="text-gray-300 font-semibold">Employees</TableHead>
+                <TableHead className="text-gray-300 font-semibold">Avg Performance</TableHead>
+                <TableHead className="text-gray-300 font-semibold">Status</TableHead>
                 <TableHead className="text-right text-gray-300 font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -480,23 +632,9 @@ export default function CompetencyManagement() {
               {filteredCompetencies.map((comp) => (
                 <TableRow key={comp.id} className="border-gray-600 hover:bg-gray-700">
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src="/placeholder.svg" />
-                        <AvatarFallback className="bg-gray-600 text-white">{comp.employee.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium text-white">{comp.employee}</div>
-                        <div className="text-sm text-gray-400">{comp.role}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
                     <div>
-                      <div className="text-white font-medium">{comp.name}</div>
-                      {comp.certificationExpiry && (
-                        <div className="text-xs text-yellow-400">Cert expires: {comp.certificationExpiry}</div>
-                      )}
+                      <div className="font-medium text-white">{comp.name}</div>
+                      <div className="text-sm text-gray-400">{comp.description}</div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -504,25 +642,33 @@ export default function CompetencyManagement() {
                       {comp.category}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-white">Level {comp.requiredLevel}</TableCell>
+                  <TableCell>
+                    <div className="text-white">
+                      {comp.assessedEmployees}/{comp.totalEmployees}
+                    </div>
+                    <div className="text-sm text-gray-400">assessed</div>
+                  </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-300">
-                          {comp.currentLevel}/{comp.requiredLevel}
+                          {comp.avgCurrentLevel.toFixed(1)}/{comp.requiredLevel}
                         </span>
                         <span className="text-gray-400">
-                          {Math.round((comp.currentLevel / comp.requiredLevel) * 100)}%
+                          {Math.round((comp.avgCurrentLevel / comp.requiredLevel) * 100)}%
                         </span>
                       </div>
-                      <Progress value={(comp.currentLevel / comp.requiredLevel) * 100} className="h-2" />
+                      <Progress value={(comp.avgCurrentLevel / comp.requiredLevel) * 100} className="h-2" />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getGapBadgeColor(comp.gap)}>
-                      {comp.gap === 0 ? "Proficient" : `Gap: ${comp.gap} level${comp.gap > 1 ? "s" : ""}`}
+                    <Badge className={getGapBadgeColor(comp.avgCurrentLevel, comp.requiredLevel)}>
+                      {comp.avgCurrentLevel >= comp.requiredLevel
+                        ? "Proficient"
+                        : `Gap: ${(comp.requiredLevel - comp.avgCurrentLevel).toFixed(1)}`}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-300 text-sm">{comp.lastAssessed}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -537,28 +683,31 @@ export default function CompetencyManagement() {
                       <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
                         <DropdownMenuItem
                           className="gap-2 text-white hover:bg-gray-700"
-                          onClick={() => handleViewClick(comp)}
+                          onClick={() => handleViewCompetencyClick(comp)}
                         >
                           <Eye size={16} />
-                          View Assessment
+                          View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="gap-2 text-white hover:bg-gray-700"
-                          onClick={() => handleEditClick(comp)}
+                          onClick={() => handleViewAssessmentsClick(comp)}
+                        >
+                          <ClipboardList size={16} />
+                          Manage Assessments
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 text-white hover:bg-gray-700"
+                          onClick={() => handleEditCompetencyClick(comp)}
                         >
                           <Edit size={16} />
-                          Update Skills
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 text-white hover:bg-gray-700">
-                          <Target size={16} />
-                          Create Training Plan
+                          Edit Competency
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="gap-2 text-red-400 hover:bg-gray-700"
-                          onClick={() => handleDeleteClick(comp)}
+                          onClick={() => handleDeleteCompetencyClick(comp)}
                         >
                           <Trash2 size={16} />
-                          Delete Assessment
+                          Delete Competency
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -570,47 +719,23 @@ export default function CompetencyManagement() {
         </CardContent>
       </Card>
 
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      <Dialog open={isCreateCompetencyModalOpen} onOpenChange={setIsCreateCompetencyModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">New Competency Assessment</DialogTitle>
+            <DialogTitle className="text-white">Create New Competency</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Create a new competency assessment for an employee
+              Define a new competency that employees can be assessed on
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="employee" className="text-gray-300">
-                Employee
-              </Label>
-              <Select
-                value={formData.employee}
-                onValueChange={(value) => setFormData({ ...formData, employee: value })}
-              >
-                <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="Mike Rodriguez" className="text-white">
-                    Mike Rodriguez - Long-Haul Driver
-                  </SelectItem>
-                  <SelectItem value="Sarah Johnson" className="text-white">
-                    Sarah Johnson - Dispatcher
-                  </SelectItem>
-                  <SelectItem value="David Chen" className="text-white">
-                    David Chen - Warehouse Supervisor
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="competency" className="text-gray-300">
-                Competency
+              <Label htmlFor="name" className="text-gray-300">
+                Competency Name
               </Label>
               <Input
-                id="competency"
-                value={formData.competency}
-                onChange={(e) => setFormData({ ...formData, competency: e.target.value })}
+                id="name"
+                value={competencyFormData.name}
+                onChange={(e) => setCompetencyFormData({ ...competencyFormData, name: e.target.value })}
                 className="bg-gray-700 border-2 border-gray-600 text-white"
                 placeholder="e.g., Commercial Driving (CDL)"
               />
@@ -620,8 +745,8 @@ export default function CompetencyManagement() {
                 Category
               </Label>
               <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                value={competencyFormData.category}
+                onValueChange={(value) => setCompetencyFormData({ ...competencyFormData, category: value })}
               >
                 <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
                   <SelectValue placeholder="Select category" />
@@ -642,94 +767,72 @@ export default function CompetencyManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentLevel" className="text-gray-300">
-                  Current Level
-                </Label>
-                <Select
-                  value={formData.currentLevel.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, currentLevel: Number.parseInt(value) })}
-                >
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <SelectItem key={level} value={level.toString()} className="text-white">
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="requiredLevel" className="text-gray-300">
-                  Required Level
-                </Label>
-                <Select
-                  value={formData.requiredLevel.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, requiredLevel: Number.parseInt(value) })}
-                >
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <SelectItem key={level} value={level.toString()} className="text-white">
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="notes" className="text-gray-300">
-                Assessment Notes
+              <Label htmlFor="description" className="text-gray-300">
+                Description
               </Label>
               <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                id="description"
+                value={competencyFormData.description}
+                onChange={(e) => setCompetencyFormData({ ...competencyFormData, description: e.target.value })}
                 className="bg-gray-700 border-2 border-gray-600 text-white"
-                placeholder="Additional notes about the assessment..."
+                placeholder="Describe what this competency covers..."
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="requiredLevel" className="text-gray-300">
+                Required Level
+              </Label>
+              <Select
+                value={competencyFormData.requiredLevel.toString()}
+                onValueChange={(value) =>
+                  setCompetencyFormData({ ...competencyFormData, requiredLevel: Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <SelectItem key={level} value={level.toString()} className="text-white">
+                      Level {level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
             <Button
               variant="outline"
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => setIsCreateCompetencyModalOpen(false)}
               className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
             >
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
-              Create Assessment
+            <Button onClick={handleSubmitCompetency} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Create Competency
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditCompetencyModalOpen} onOpenChange={setIsEditCompetencyModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">Update Competency Assessment</DialogTitle>
-            <DialogDescription className="text-gray-300">
-              Update the competency assessment for {selectedCompetency?.employee}
-            </DialogDescription>
+            <DialogTitle className="text-white">Edit Competency</DialogTitle>
+            <DialogDescription className="text-gray-300">Update the competency details</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="competency" className="text-gray-300">
-                Competency
+              <Label htmlFor="name" className="text-gray-300">
+                Competency Name
               </Label>
               <Input
-                id="competency"
-                value={formData.competency}
-                onChange={(e) => setFormData({ ...formData, competency: e.target.value })}
+                id="name"
+                value={competencyFormData.name}
+                onChange={(e) => setCompetencyFormData({ ...competencyFormData, name: e.target.value })}
                 className="bg-gray-700 border-2 border-gray-600 text-white"
               />
             </div>
@@ -738,8 +841,8 @@ export default function CompetencyManagement() {
                 Category
               </Label>
               <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                value={competencyFormData.category}
+                onValueChange={(value) => setCompetencyFormData({ ...competencyFormData, category: value })}
               >
                 <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
                   <SelectValue />
@@ -760,58 +863,482 @@ export default function CompetencyManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentLevel" className="text-gray-300">
-                  Current Level
-                </Label>
-                <Select
-                  value={formData.currentLevel.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, currentLevel: Number.parseInt(value) })}
-                >
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <SelectItem key={level} value={level.toString()} className="text-white">
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-gray-300">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={competencyFormData.description}
+                onChange={(e) => setCompetencyFormData({ ...competencyFormData, description: e.target.value })}
+                className="bg-gray-700 border-2 border-gray-600 text-white"
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="requiredLevel" className="text-gray-300">
+                Required Level
+              </Label>
+              <Select
+                value={competencyFormData.requiredLevel.toString()}
+                onValueChange={(value) =>
+                  setCompetencyFormData({ ...competencyFormData, requiredLevel: Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <SelectItem key={level} value={level.toString()} className="text-white">
+                      Level {level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditCompetencyModalOpen(false)}
+              className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitCompetency} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Update Competency
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isViewCompetencyModalOpen} onOpenChange={setIsViewCompetencyModalOpen}>
+        <DialogContent className="sm:max-w-[600px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Competency Details</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Detailed information about {selectedCompetency?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCompetency && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Competency Name</Label>
+                  <p className="text-white font-medium">{selectedCompetency.name}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Category</Label>
+                  <Badge variant="outline" className="border-gray-500 text-gray-300 w-fit">
+                    {selectedCompetency.category}
+                  </Badge>
+                </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="requiredLevel" className="text-gray-300">
-                  Required Level
-                </Label>
-                <Select
-                  value={formData.requiredLevel.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, requiredLevel: Number.parseInt(value) })}
-                >
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <SelectItem key={level} value={level.toString()} className="text-white">
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-gray-400">Description</Label>
+                <p className="text-white">{selectedCompetency.description}</p>
               </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Required Level</Label>
+                  <p className="text-white font-medium">Level {selectedCompetency.requiredLevel}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Employees</Label>
+                  <p className="text-white">
+                    {selectedCompetency.assessedEmployees}/{selectedCompetency.totalEmployees}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Avg Performance</Label>
+                  <p className="text-white">
+                    {selectedCompetency.avgCurrentLevel.toFixed(1)}/{selectedCompetency.requiredLevel}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-400">Overall Progress</Label>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">
+                      Average: {selectedCompetency.avgCurrentLevel.toFixed(1)} / Required:{" "}
+                      {selectedCompetency.requiredLevel}
+                    </span>
+                    <span className="text-gray-400">
+                      {Math.round((selectedCompetency.avgCurrentLevel / selectedCompetency.requiredLevel) * 100)}%
+                    </span>
+                  </div>
+                  <Progress
+                    value={(selectedCompetency.avgCurrentLevel / selectedCompetency.requiredLevel) * 100}
+                    className="h-3"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsViewCompetencyModalOpen(false)}
+              className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setIsViewCompetencyModalOpen(false)
+                handleEditCompetencyClick(selectedCompetency)
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Edit Competency
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAssessmentsModalOpen} onOpenChange={setIsAssessmentsModalOpen}>
+        <DialogContent className="sm:max-w-[800px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Manage Assessments - {selectedCompetency?.name}</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              View and manage employee assessments for this competency
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-300">{selectedCompetency?.assessments?.length || 0} assessments</div>
+              <Button onClick={handleCreateAssessmentClick} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus size={16} />
+                Add Assessment
+              </Button>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-600">
+                  <TableHead className="text-gray-300">Employee</TableHead>
+                  <TableHead className="text-gray-300">Current Level</TableHead>
+                  <TableHead className="text-gray-300">Progress</TableHead>
+                  <TableHead className="text-gray-300">Last Assessed</TableHead>
+                  <TableHead className="text-right text-gray-300">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedCompetency?.assessments?.map((assessment: any) => (
+                  <TableRow key={assessment.id} className="border-gray-600">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-gray-600 text-white text-xs">
+                            {assessment.employeeName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="text-white font-medium">{assessment.employeeName}</div>
+                          <div className="text-sm text-gray-400">{assessment.employeeRole}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-white">Level {assessment.currentLevel}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">
+                            {assessment.currentLevel}/{selectedCompetency.requiredLevel}
+                          </span>
+                          <span className="text-gray-400">
+                            {Math.round((assessment.currentLevel / selectedCompetency.requiredLevel) * 100)}%
+                          </span>
+                        </div>
+                        <Progress
+                          value={(assessment.currentLevel / selectedCompetency.requiredLevel) * 100}
+                          className="h-2"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-300 text-sm">{assessment.lastAssessed}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700"
+                          >
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
+                          <DropdownMenuItem
+                            className="gap-2 text-white hover:bg-gray-700"
+                            onClick={() => handleEditAssessmentClick(assessment)}
+                          >
+                            <Edit size={16} />
+                            Edit Assessment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-blue-400 hover:bg-gray-700"
+                            onClick={() => handleEnrollInCourseClick(assessment)}
+                          >
+                            <BookOpen size={16} />
+                            Enroll in Course
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-red-400 hover:bg-gray-700"
+                            onClick={() => handleDeleteAssessmentClick(assessment)}
+                          >
+                            <Trash2 size={16} />
+                            Delete Assessment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsAssessmentsModalOpen(false)}
+              className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCourseEnrollmentModalOpen} onOpenChange={setIsCourseEnrollmentModalOpen}>
+        <DialogContent className="sm:max-w-[600px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Enroll Employee in Course</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Enroll {selectedAssessmentForCourse?.employeeName} in a course to improve their {selectedCompetency?.name}{" "}
+              competency
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Employee Info Card */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="bg-gray-600 text-white">
+                    {selectedAssessmentForCourse?.employeeName?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-white font-medium">{selectedAssessmentForCourse?.employeeName}</div>
+                  <div className="text-sm text-gray-400">{selectedAssessmentForCourse?.employeeRole}</div>
+                </div>
+              </div>
+              <div className="text-sm text-gray-300">
+                Current Level: {selectedAssessmentForCourse?.currentLevel} / {selectedCompetency?.requiredLevel}
+                <span className="ml-2 text-orange-400">
+                  (Gap: {selectedCompetency?.requiredLevel - selectedAssessmentForCourse?.currentLevel})
+                </span>
+              </div>
+            </div>
+
+            {/* Course Details Form */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="courseTitle" className="text-white">
+                  Course Title *
+                </Label>
+                <Input
+                  id="courseTitle"
+                  value={courseEnrollmentForm.courseTitle}
+                  onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseTitle: e.target.value }))}
+                  placeholder="e.g., Advanced JavaScript Programming"
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="courseProvider" className="text-white">
+                    Course Provider *
+                  </Label>
+                  <Input
+                    id="courseProvider"
+                    value={courseEnrollmentForm.courseProvider}
+                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseProvider: e.target.value }))}
+                    placeholder="e.g., Coursera, Udemy, Internal"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="courseDuration" className="text-white">
+                    Duration *
+                  </Label>
+                  <Input
+                    id="courseDuration"
+                    value={courseEnrollmentForm.courseDuration}
+                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseDuration: e.target.value }))}
+                    placeholder="e.g., 4 weeks, 20 hours"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="courseDescription" className="text-white">
+                  Course Description
+                </Label>
+                <textarea
+                  id="courseDescription"
+                  value={courseEnrollmentForm.courseDescription}
+                  onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseDescription: e.target.value }))}
+                  placeholder="Brief description of what the course covers..."
+                  className="w-full min-h-[80px] px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="startDate" className="text-white">
+                    Start Date *
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={courseEnrollmentForm.startDate}
+                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="priority" className="text-white">
+                    Priority
+                  </Label>
+                  <select
+                    id="priority"
+                    value={courseEnrollmentForm.priority}
+                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, priority: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsCourseEnrollmentModalOpen(false)}
+              className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCourseEnrollmentSubmit}
+              disabled={
+                !courseEnrollmentForm.courseTitle ||
+                !courseEnrollmentForm.courseProvider ||
+                !courseEnrollmentForm.courseDuration ||
+                !courseEnrollmentForm.startDate
+              }
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+            >
+              Enroll Employee
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCreateAssessmentModalOpen} onOpenChange={setIsCreateAssessmentModalOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Create Assessment</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Add a new employee assessment for {selectedCompetency?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="employeeName" className="text-gray-300">
+                Employee Name
+              </Label>
+              <Select
+                value={assessmentFormData.employeeName}
+                onValueChange={(value) => {
+                  const employee = employees.find((emp) => emp.name === value)
+                  setAssessmentFormData({
+                    ...assessmentFormData,
+                    employeeName: value,
+                    employeeRole: employee?.role || "",
+                  })
+                }}
+              >
+                <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.name} className="text-white">
+                      {employee.name} - {employee.role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currentLevel" className="text-gray-300">
+                Current Level
+              </Label>
+              <Select
+                value={assessmentFormData.currentLevel.toString()}
+                onValueChange={(value) =>
+                  setAssessmentFormData({ ...assessmentFormData, currentLevel: Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <SelectItem key={level} value={level.toString()} className="text-white">
+                      Level {level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="certificationExpiry" className="text-gray-300">
+                Certification Expiry (Optional)
+              </Label>
+              <Input
+                id="certificationExpiry"
+                type="date"
+                value={assessmentFormData.certificationExpiry}
+                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, certificationExpiry: e.target.value })}
+                className="bg-gray-700 border-2 border-gray-600 text-white"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes" className="text-gray-300">
-                Assessment Notes
+                Notes
               </Label>
               <Textarea
                 id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                value={assessmentFormData.notes}
+                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, notes: e.target.value })}
                 className="bg-gray-700 border-2 border-gray-600 text-white"
-                placeholder="Additional notes about the assessment..."
+                placeholder="Assessment notes and observations..."
                 rows={3}
               />
             </div>
@@ -819,117 +1346,194 @@ export default function CompetencyManagement() {
           <div className="flex justify-end gap-2 mt-6">
             <Button
               variant="outline"
-              onClick={() => setIsEditModalOpen(false)}
+              onClick={() => setIsCreateAssessmentModalOpen(false)}
               className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
             >
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={handleSubmitAssessment} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Create Assessment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditAssessmentModalOpen} onOpenChange={setIsEditAssessmentModalOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Assessment</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Update assessment for {selectedAssessment?.employeeName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="employeeName" className="text-gray-300">
+                Employee Name
+              </Label>
+              <Input
+                id="employeeName"
+                value={assessmentFormData.employeeName}
+                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, employeeName: e.target.value })}
+                className="bg-gray-700 border-2 border-gray-600 text-white"
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="employeeRole" className="text-gray-300">
+                Employee Role
+              </Label>
+              <Input
+                id="employeeRole"
+                value={assessmentFormData.employeeRole}
+                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, employeeRole: e.target.value })}
+                className="bg-gray-700 border-2 border-gray-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currentLevel" className="text-gray-300">
+                Current Level
+              </Label>
+              <Select
+                value={assessmentFormData.currentLevel.toString()}
+                onValueChange={(value) =>
+                  setAssessmentFormData({ ...assessmentFormData, currentLevel: Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <SelectItem key={level} value={level.toString()} className="text-white">
+                      Level {level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="certificationExpiry" className="text-gray-300">
+                Certification Expiry (Optional)
+              </Label>
+              <Input
+                id="certificationExpiry"
+                type="date"
+                value={assessmentFormData.certificationExpiry}
+                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, certificationExpiry: e.target.value })}
+                className="bg-gray-700 border-2 border-gray-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-gray-300">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                value={assessmentFormData.notes}
+                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, notes: e.target.value })}
+                className="bg-gray-700 border-2 border-gray-600 text-white"
+                placeholder="Assessment notes and observations..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditAssessmentModalOpen(false)}
+              className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitAssessment} className="bg-blue-600 hover:bg-blue-700 text-white">
               Update Assessment
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+      <Dialog open={isDeleteAssessmentModalOpen} onOpenChange={setIsDeleteAssessmentModalOpen}>
+        <DialogContent className="sm:max-w-[400px] bg-gray-800 border-2 border-gray-600 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">Competency Assessment Details</DialogTitle>
+            <DialogTitle className="text-white">Delete Assessment</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Detailed view of {selectedCompetency?.employee}'s competency assessment
+              Are you sure you want to delete the assessment for {selectedAssessment?.employeeName}?
             </DialogDescription>
           </DialogHeader>
-          {selectedCompetency && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-gray-400">Employee</Label>
-                  <p className="text-white font-medium">{selectedCompetency.employee}</p>
-                  <p className="text-gray-300 text-sm">{selectedCompetency.role}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-400">Competency</Label>
-                  <p className="text-white font-medium">{selectedCompetency.name}</p>
-                  <Badge variant="outline" className="border-gray-500 text-gray-300 w-fit">
-                    {selectedCompetency.category}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-gray-400">Skill Level Progress</Label>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-300">
-                        Current: {selectedCompetency.currentLevel} / Required: {selectedCompetency.requiredLevel}
-                      </span>
-                      <span className="text-gray-400">
-                        {Math.round((selectedCompetency.currentLevel / selectedCompetency.requiredLevel) * 100)}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={(selectedCompetency.currentLevel / selectedCompetency.requiredLevel) * 100}
-                      className="h-3"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-gray-400">Gap Status</Label>
-                    <Badge className={getGapBadgeColor(selectedCompetency.gap)}>
-                      {selectedCompetency.gap === 0
-                        ? "Proficient"
-                        : `Gap: ${selectedCompetency.gap} level${selectedCompetency.gap > 1 ? "s" : ""}`}
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-gray-400">Last Assessed</Label>
-                    <p className="text-white">{selectedCompetency.lastAssessed}</p>
-                  </div>
-                </div>
-
-                {selectedCompetency.certificationExpiry && (
-                  <div className="space-y-2">
-                    <Label className="text-gray-400">Certification Expiry</Label>
-                    <p className="text-yellow-400">{selectedCompetency.certificationExpiry}</p>
-                  </div>
-                )}
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10">
+                <AvatarFallback className="bg-gray-600 text-white">
+                  {selectedAssessment?.employeeName?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="text-white font-medium">{selectedAssessment?.employeeName}</div>
+                <div className="text-sm text-gray-400">{selectedAssessment?.employeeRole}</div>
+                <div className="text-sm text-gray-300">Current Level: {selectedAssessment?.currentLevel}</div>
               </div>
             </div>
-          )}
+          </div>
+          <div className="text-sm text-red-400 bg-red-900/20 p-3 rounded-lg border border-red-800">
+            <strong>Warning:</strong> This action cannot be undone. All assessment data will be permanently removed.
+          </div>
           <div className="flex justify-end gap-2 mt-6">
             <Button
               variant="outline"
-              onClick={() => setIsViewModalOpen(false)}
+              onClick={() => setIsDeleteAssessmentModalOpen(false)}
               className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
             >
-              Close
+              Cancel
             </Button>
-            <Button
-              onClick={() => {
-                setIsViewModalOpen(false)
-                handleEditClick(selectedCompetency)
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Edit Assessment
+            <Button onClick={handleDeleteAssessmentConfirm} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete Assessment
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDelete}
-        title="Delete Competency Assessment"
-        description="Are you sure you want to delete this competency assessment for"
-        itemName={selectedCompetency?.employee}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+      <Dialog open={isDeleteCompetencyModalOpen} onOpenChange={setIsDeleteCompetencyModalOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Delete Competency</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Are you sure you want to delete the competency "{selectedCompetency?.name}"?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <div className="space-y-2">
+                <div className="text-white font-medium">{selectedCompetency?.name}</div>
+                <div className="text-sm text-gray-400">{selectedCompetency?.description}</div>
+                <div className="flex gap-4 text-sm">
+                  <span className="text-gray-300">Category: {selectedCompetency?.category}</span>
+                  <span className="text-gray-300">Required Level: {selectedCompetency?.requiredLevel}</span>
+                </div>
+                <div className="text-sm text-orange-400">
+                  {selectedCompetency?.assessments?.length || 0} employee assessments will also be deleted
+                </div>
+              </div>
+            </div>
+            <div className="text-sm text-red-400 bg-red-900/20 p-3 rounded-lg border border-red-800">
+              <strong>Warning:</strong> This action cannot be undone. The competency and all associated employee
+              assessments will be permanently removed.
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteCompetencyModalOpen(false)}
+              className="border-2 border-gray-600 text-white bg-transparent hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteCompetencyConfirm} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete Competency
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

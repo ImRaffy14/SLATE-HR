@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// =======================================
+// GENERATOR & DATASOURCE
+// =======================================
 
 generator client {
   provider = "prisma-client-js"
@@ -13,25 +11,240 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =======================================
+// ENUMS
+// =======================================
+
 enum UserRole {
   ADMIN
   USER
 }
 
+enum EnrollmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// =======================================
+// USERS (Admins/HR/Managers only)
+// =======================================
 
 model User {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  image     Image?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Competency relations
+  createdCompetencies Competency[] @relation("CompetencyCreatedBy")
+  updatedCompetencies Competency[] @relation("CompetencyUpdatedBy")
+
+  // Course relations
+  createdCourses Course[] @relation("CourseCreatedBy")
+  updatedCourses Course[] @relation("CourseUpdatedBy")
+
+  // TrainingSession relations
+  createdTrainingSessions TrainingSession[] @relation("TrainingSessionCreatedBy")
+  updatedTrainingSessions TrainingSession[] @relation("TrainingSessionUpdatedBy")
+
+  // SuccessionPlan relations
+  createdSuccessionPlans SuccessionPlan[] @relation("SuccessionCreatedBy")
+  updatedSuccessionPlans SuccessionPlan[] @relation("SuccessionUpdatedBy")
+}
+
+type Image {
+  imageUrl String
+  publicId String
+}
+
+// =======================================
+// EMPLOYEES (from external HR system)
+// =======================================
+
+model Employee {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId  String   @unique // external HRIS/ERP reference
   name        String
-  email       String @unique
-  password    String
-  role        UserRole
-  image       Image?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  email       String?
+  department  String?
+  position    String?
+  dateHired   DateTime?
+  status      EmployeeStatus @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  competencies CompetencyAssessment[]
+  enrollments  Enrollment[]
+  trainings    TrainingRecord[]
+  performance  Performance[]
+  succession   SuccessionPlan[]
+
+  CourseFeedback CourseFeedback[]
+}
+
+// =======================================
+// COMPETENCY MANAGEMENT
+// =======================================
+
+model Competency {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  role        String          // role this competency applies to
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Audit fields
+  createdBy   String   @db.ObjectId
+  updatedBy   String?  @db.ObjectId
+  creator     User     @relation("CompetencyCreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("CompetencyUpdatedBy", fields: [updatedBy], references: [id])
+
+  assessments CompetencyAssessment[]
+}
+
+model CompetencyAssessment {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId    String   @db.ObjectId
+  competencyId  String   @db.ObjectId
+  selfScore     Int
+  hrScore       Int?
+  createdAt     DateTime @default(now())
+
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  competency Competency @relation(fields: [competencyId], references: [id])
+}
+
+// =======================================
+// LEARNING MANAGEMENT
+// =======================================
+
+model Course {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  mode        String    // online/offline
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Audit fields
+  createdBy   String   @db.ObjectId
+  updatedBy   String?  @db.ObjectId
+  creator     User     @relation("CourseCreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("CourseUpdatedBy", fields: [updatedBy], references: [id])
+
+  enrollments Enrollment[]
+  feedbacks   CourseFeedback[]
+
+  TrainingSession TrainingSession[]
+}
+
+model Enrollment {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId   String   @db.ObjectId
+  courseId     String   @db.ObjectId
+  status       EnrollmentStatus @default(NOT_STARTED)
+  progress     Int      @default(0)
+  enrolledAt   DateTime @default(now())
+  lastActivity DateTime?
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  course   Course   @relation(fields: [courseId], references: [id])
+}
+
+model CourseFeedback {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId  String   @db.ObjectId
+  courseId    String   @db.ObjectId
+  rating      Int      // 1–5 stars
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  course   Course   @relation(fields: [courseId], references: [id])
 }
 
 
-type Image {
-  imageUrl    String
-  publicId    String
+// =======================================
+// TRAINING MANAGEMENT
+// =======================================
+
+model TrainingSession {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId    String   @db.ObjectId
+  date        DateTime
+  location    String?
+  trainer     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Audit fields
+  createdBy   String   @db.ObjectId
+  updatedBy   String?  @db.ObjectId
+  creator     User     @relation("TrainingSessionCreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("TrainingSessionUpdatedBy", fields: [updatedBy], references: [id])
+
+  course      Course   @relation(fields: [courseId], references: [id])
+  records     TrainingRecord[]
+}
+
+model TrainingRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId    String   @db.ObjectId
+  trainingId    String   @db.ObjectId
+  attendance    Boolean  @default(false)
+  certification String?
+  completedAt   DateTime?
+
+  employee Employee        @relation(fields: [employeeId], references: [id])
+  training TrainingSession @relation(fields: [trainingId], references: [id])
+}
+
+// =======================================
+// SUCCESSION PLANNING
+// =======================================
+
+model SuccessionPlan {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String  @db.ObjectId
+  role      String
+  readiness Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Audit fields
+  createdBy   String   @db.ObjectId
+  updatedBy   String?  @db.ObjectId
+  creator     User     @relation("SuccessionCreatedBy", fields: [createdBy], references: [id])
+  updater     User?    @relation("SuccessionUpdatedBy", fields: [updatedBy], references: [id])
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+// =======================================
+// PERFORMANCE ANALYSIS
+// =======================================
+
+model Performance {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId  String   @db.ObjectId
+  score       Int
+  feedback    String?
+  reviewDate  DateTime @default(now())
+
+  // Audit fields
+  createdBy   String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
 }

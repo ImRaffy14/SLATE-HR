@@ -8,6 +8,7 @@ import LearningManagement from "./pages/LearningManagement";
 import PerformanceAnalysis from "./pages/PerformanceAnalysis";
 import SuccessionPlanning from "./pages/SuccessionPlanning";
 import TrainingManagement from "./pages/TrainingManagement";
+import EnrollmentManagement from "./pages/enrollmentManagement";
 import WithSocket from "./components/WithSocket";
 import FullPageLoader from "./components/FullpageLoader";
 import { Toaster } from "react-hot-toast";
@@ -108,6 +109,11 @@ function App() {
           element: <TrainingManagement />,
           roles: ["ADMIN"] 
         },
+        {
+          path: "enrollments/:courseId",
+          element: <EnrollmentManagement />,
+          roles: ["ADMIN"]
+        }
       ],
     },
   ];
