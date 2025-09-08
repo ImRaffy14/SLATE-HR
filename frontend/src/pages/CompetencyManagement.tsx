@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Search,
   Filter,
@@ -46,92 +46,27 @@ import {
   Pie,
 } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import {
+  createCompetency,
+  updateCompetency,
+  deleteCompetency,
+  addAssessment,
+  getCompetencies,
+  getAnalytics
+} from "@/api/competency"
+import { getEmployees } from "@/api/employee"
+import { toast } from "react-hot-toast"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import FullPageLoader from "@/components/FullpageLoader"
 
-const competencies = [
-  {
-    id: 1,
-    name: "Commercial Driving (CDL)",
-    category: "Safety & Compliance",
-    description: "Commercial driver's license and safe driving practices",
-    requiredLevel: 5,
-    totalEmployees: 12,
-    assessedEmployees: 10,
-    avgCurrentLevel: 4.2,
-    createdDate: "2024-01-01",
-    assessments: [
-      {
-        id: 1,
-        employeeName: "Mike Rodriguez",
-        employeeRole: "Long-Haul Driver",
-        currentLevel: 4,
-        lastAssessed: "2024-01-15",
-        certificationExpiry: "2024-12-31",
-        notes: "Excellent driving record, needs refresher on new regulations",
-      },
-      {
-        id: 2,
-        employeeName: "John Smith",
-        employeeRole: "Local Driver",
-        currentLevel: 5,
-        lastAssessed: "2024-01-20",
-        certificationExpiry: "2024-11-30",
-        notes: "Fully proficient, mentor for new drivers",
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Route Optimization",
-    category: "Operations",
-    description: "Efficient route planning and logistics coordination",
-    requiredLevel: 4,
-    totalEmployees: 8,
-    assessedEmployees: 6,
-    avgCurrentLevel: 3.5,
-    createdDate: "2024-01-05",
-    assessments: [
-      {
-        id: 3,
-        employeeName: "Sarah Johnson",
-        employeeRole: "Dispatcher",
-        currentLevel: 3,
-        lastAssessed: "2024-01-10",
-        certificationExpiry: null,
-        notes: "Good understanding, needs advanced training",
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: "Warehouse Management",
-    category: "Operations",
-    description: "Inventory management and warehouse operations",
-    requiredLevel: 4,
-    totalEmployees: 15,
-    assessedEmployees: 12,
-    avgCurrentLevel: 3.8,
-    createdDate: "2024-01-03",
-    assessments: [
-      {
-        id: 4,
-        employeeName: "David Chen",
-        employeeRole: "Warehouse Supervisor",
-        currentLevel: 4,
-        lastAssessed: "2024-01-20",
-        certificationExpiry: null,
-        notes: "Excellent leadership and organization skills",
-      },
-    ],
-  },
-]
 
 const employees = [
-  { id: 1, name: "Mike Rodriguez", role: "Long-Haul Driver" },
-  { id: 2, name: "Sarah Johnson", role: "Dispatcher" },
-  { id: 3, name: "David Chen", role: "Warehouse Supervisor" },
-  { id: 4, name: "Lisa Thompson", role: "Safety Manager" },
-  { id: 5, name: "James Wilson", role: "Forklift Operator" },
-  { id: 6, name: "Maria Garcia", role: "Customer Relations" },
+  { id: "1", name: "Mike Rodriguez", role: "Long-Haul Driver" },
+  { id: "2", name: "Sarah Johnson", role: "Dispatcher" },
+  { id: "3", name: "David Chen", role: "Warehouse Supervisor" },
+  { id: "4", name: "Lisa Thompson", role: "Safety Manager" },
+  { id: "5", name: "James Wilson", role: "Forklift Operator" },
+  { id: "6", name: "Maria Garcia", role: "Customer Relations" },
 ]
 
 const skillGapData = [
@@ -184,11 +119,10 @@ export default function CompetencyManagement() {
   })
 
   const [assessmentFormData, setAssessmentFormData] = useState({
+    employeeId: "",
     employeeName: "",
-    employeeRole: "",
     currentLevel: 1,
-    notes: "",
-    certificationExpiry: "",
+    requiredLevel: 1,
   })
 
   const [isCourseEnrollmentModalOpen, setIsCourseEnrollmentModalOpen] = useState(false)
@@ -202,11 +136,70 @@ export default function CompetencyManagement() {
     priority: "medium",
   })
 
-  const filteredCompetencies = competencies.filter((comp) => {
-    const matchesSearch = comp.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "All" || comp.category === selectedCategory
-    return matchesSearch && matchesCategory
+  const queryClient = useQueryClient()
+
+  const { data: employeesData = [], isLoading: isEmployeesLoading } = useQuery({
+    queryKey: ["employees"],
+    queryFn: getEmployees,
   })
+
+  const { data: analyticsData, isLoading: isAnalyticsLoading } = useQuery({
+    queryKey: ["competencyAnalytics"],
+    queryFn: getAnalytics,
+  })
+
+  console.log("Analytics Data:", analyticsData)
+
+  const { data: competencies = [], isLoading: isCompetenciesLoading } = useQuery({
+    queryKey: ["competencies"],
+    queryFn: getCompetencies,
+  })
+
+  const { mutate: createCompetencyMutate, isPending: isCreatingCompetency } = useMutation({
+    mutationFn: createCompetency,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["competencies"] })
+      toast.success("Competency created successfully!")
+      setIsCreateCompetencyModalOpen(false)
+    },
+  })
+
+  const { mutate: updateCompetencyMutate, isPending: isUpdatingCompetency } = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateCompetency(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["competencies"] })
+      toast.success("Competency updated successfully!")
+      setIsEditCompetencyModalOpen(false)
+    },
+  })
+
+  const { mutate: deleteCompetencyMutate, isPending: isDeletingCompetency } = useMutation({
+    mutationFn: (id: string) => deleteCompetency(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["competencies"] })
+      toast.success("Competency deleted successfully!")
+      setIsDeleteCompetencyModalOpen(false)
+    },
+  })
+
+  const { mutate: addAssessmentMutate, isPending: isAddingAssessment } = useMutation({
+    mutationFn: addAssessment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["competencies"] })
+      queryClient.invalidateQueries({ queryKey: ["competencyAnalytics"] })
+      toast.success("Assessment added successfully!")
+      setIsCreateAssessmentModalOpen(false)
+    },
+  })
+
+  const filteredCompetencies = (competencies ?? []).filter((comp: any) => {
+    const matchesSearch = comp?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "All" || comp?.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+
 
   const getGapBadgeColor = (avgLevel: number, requiredLevel: number) => {
     const gap = requiredLevel - avgLevel
@@ -215,25 +208,6 @@ export default function CompetencyManagement() {
     return "bg-red-600 text-white"
   }
 
-  const createCompetency = async (data: any) => {
-    console.log("Creating competency:", data)
-    // API call would go here
-  }
-
-  const updateCompetency = async (id: number, data: any) => {
-    console.log("Updating competency:", id, data)
-    // API call would go here
-  }
-
-  const deleteCompetency = async (id: number) => {
-    console.log("Deleting competency:", id)
-    // API call would go here
-  }
-
-  const createAssessment = async (competencyId: number, data: any) => {
-    console.log("Creating assessment for competency:", competencyId, data)
-    // API call would go here
-  }
 
   const updateAssessment = async (assessmentId: number, data: any) => {
     console.log("Updating assessment:", assessmentId, data)
@@ -245,11 +219,6 @@ export default function CompetencyManagement() {
     // API call would go here
   }
 
-  const getCompetencyAssessments = async (competencyId: number) => {
-    console.log("Fetching assessments for competency:", competencyId)
-    // API call would go here
-    return competencies.find((c) => c.id === competencyId)?.assessments || []
-  }
 
   const handleCreateCompetencyClick = () => {
     setCompetencyFormData({
@@ -289,11 +258,10 @@ export default function CompetencyManagement() {
 
   const handleCreateAssessmentClick = () => {
     setAssessmentFormData({
+      employeeId: "",
       employeeName: "",
-      employeeRole: "",
       currentLevel: 1,
-      notes: "",
-      certificationExpiry: "",
+      requiredLevel: selectedCompetency?.requiredLevel || 1,
     })
     setIsCreateAssessmentModalOpen(true)
   }
@@ -301,11 +269,10 @@ export default function CompetencyManagement() {
   const handleEditAssessmentClick = (assessment: any) => {
     setSelectedAssessment(assessment)
     setAssessmentFormData({
-      employeeName: assessment.employeeName,
-      employeeRole: assessment.employeeRole,
       currentLevel: assessment.currentLevel,
-      notes: assessment.notes,
-      certificationExpiry: assessment.certificationExpiry || "",
+      employeeName: assessment.employeeName,
+      employeeId: assessment.employeeId,
+      requiredLevel: assessment.hrScore,
     })
     setIsEditAssessmentModalOpen(true)
   }
@@ -347,11 +314,9 @@ export default function CompetencyManagement() {
 
   const handleSubmitCompetency = async () => {
     if (selectedCompetency) {
-      await updateCompetency(selectedCompetency.id, competencyFormData)
-      setIsEditCompetencyModalOpen(false)
+      updateCompetencyMutate({ id: selectedCompetency.id, data: competencyFormData })
     } else {
-      await createCompetency(competencyFormData)
-      setIsCreateCompetencyModalOpen(false)
+      createCompetencyMutate(competencyFormData)
     }
   }
 
@@ -360,14 +325,12 @@ export default function CompetencyManagement() {
       await updateAssessment(selectedAssessment.id, assessmentFormData)
       setIsEditAssessmentModalOpen(false)
     } else {
-      await createAssessment(selectedCompetency.id, assessmentFormData)
-      setIsCreateAssessmentModalOpen(false)
+      addAssessmentMutate({ competencyId: selectedCompetency.id, ...assessmentFormData })
     }
   }
 
   const handleDeleteCompetencyConfirm = async () => {
-    await deleteCompetency(selectedCompetency.id)
-    setIsDeleteCompetencyModalOpen(false)
+    deleteCompetencyMutate(selectedCompetency.id)
   }
 
   const handleDeleteAssessmentConfirm = async () => {
@@ -379,6 +342,12 @@ export default function CompetencyManagement() {
     console.log("Enrolling employee in course:", enrollmentData)
     // API call would go here
   }
+
+  const isLoading = isCompetenciesLoading || isEmployeesLoading || isAnalyticsLoading;
+
+   if (isLoading) {
+     return <FullPageLoader message={"Fetching Competency Data"} showLogo={false} />
+   }
 
   return (
     <div className="">
@@ -405,7 +374,7 @@ export default function CompetencyManagement() {
               <Target className="h-8 w-8 text-blue-400" />
               <div>
                 <p className="text-sm text-gray-300">Total Competencies</p>
-                <p className="text-2xl font-bold text-white">31</p>
+                <p className="text-2xl font-bold text-white">{competencies.length || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -416,7 +385,7 @@ export default function CompetencyManagement() {
               <TrendingUp className="h-8 w-8 text-green-400" />
               <div>
                 <p className="text-sm text-gray-300">Proficient</p>
-                <p className="text-2xl font-bold text-white">23</p>
+                <p className="text-2xl font-bold text-white">{analyticsData.totalProficient}</p>
               </div>
             </div>
           </CardContent>
@@ -427,7 +396,7 @@ export default function CompetencyManagement() {
               <AlertCircle className="h-8 w-8 text-yellow-400" />
               <div>
                 <p className="text-sm text-gray-300">Critical Gaps</p>
-                <p className="text-2xl font-bold text-white">8</p>
+                <p className="text-2xl font-bold text-white">{analyticsData.totalCriticalGaps}</p>
               </div>
             </div>
           </CardContent>
@@ -437,8 +406,8 @@ export default function CompetencyManagement() {
             <div className="flex items-center gap-3">
               <Truck className="h-8 w-8 text-purple-400" />
               <div>
-                <p className="text-sm text-gray-300">Certifications Due</p>
-                <p className="text-2xl font-bold text-white">12</p>
+                <p className="text-sm text-gray-300">Total Assessed</p>
+                <p className="text-2xl font-bold text-white">{analyticsData.totalAssessed}</p>
               </div>
             </div>
           </CardContent>
@@ -466,7 +435,7 @@ export default function CompetencyManagement() {
               className="h-[300px]"
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={skillGapData}>
+                <BarChart data={analyticsData.skillGapsByCategory || skillGapData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="category" stroke="#9CA3AF" fontSize={12} />
                   <YAxis stroke="#9CA3AF" />
@@ -499,7 +468,7 @@ export default function CompetencyManagement() {
               className="h-[300px]"
             >
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={competencyRadarData}>
+                <RadarChart data={analyticsData.competencyRadarData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
                   <PolarGrid stroke="#374151" />
                   <PolarAngleAxis dataKey="skill" tick={{ fill: "#9CA3AF", fontSize: 12 }} />
                   <PolarRadiusAxis domain={[0, 5]} tick={{ fill: "#9CA3AF", fontSize: 10 }} />
@@ -513,47 +482,6 @@ export default function CompetencyManagement() {
         </Card>
       </div>
 
-      {/* Role Distribution Chart */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Users className="h-5 w-5 text-purple-400" />
-            Employee Role Distribution
-          </CardTitle>
-          <CardDescription className="text-gray-300">
-            Breakdown of competency assessments by role category
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center">
-            <ChartContainer
-              config={{
-                value: { label: "Employees", color: "#8B5CF6" },
-              }}
-              className="h-[300px] w-[400px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={roleDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="value"
-                    label={(entry) => (entry && entry.name ? `${entry.name}: ${entry.value}%` : "")}
-                    labelLine={false}
-                  >
-                    {roleDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Filters */}
       <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
@@ -629,7 +557,7 @@ export default function CompetencyManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCompetencies.map((comp) => (
+              {filteredCompetencies.map((comp: any) => (
                 <TableRow key={comp.id} className="border-gray-600 hover:bg-gray-700">
                   <TableCell>
                     <div>
@@ -645,7 +573,7 @@ export default function CompetencyManagement() {
                   <TableCell className="text-white">Level {comp.requiredLevel}</TableCell>
                   <TableCell>
                     <div className="text-white">
-                      {comp.assessedEmployees}/{comp.totalEmployees}
+                      {comp.assessments.length}
                     </div>
                     <div className="text-sm text-gray-400">assessed</div>
                   </TableCell>
@@ -653,20 +581,20 @@ export default function CompetencyManagement() {
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-300">
-                          {comp.avgCurrentLevel.toFixed(1)}/{comp.requiredLevel}
+                          {comp.averageCurrentLevel.averageSelfScore.toFixed(1)}/{comp.averageCurrentLevel.requiredLevel}
                         </span>
                         <span className="text-gray-400">
-                          {Math.round((comp.avgCurrentLevel / comp.requiredLevel) * 100)}%
+                          {Math.round((comp.averageCurrentLevel.averageSelfScore / comp.averageCurrentLevel.requiredLevel) * 100)}%
                         </span>
                       </div>
-                      <Progress value={(comp.avgCurrentLevel / comp.requiredLevel) * 100} className="h-2" />
+                      <Progress value={(comp.averageCurrentLevel.averageSelfScore / comp.averageCurrentLevel.requiredLevel) * 100} className="h-2" />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getGapBadgeColor(comp.avgCurrentLevel, comp.requiredLevel)}>
-                      {comp.avgCurrentLevel >= comp.requiredLevel
+                    <Badge className={getGapBadgeColor(comp.averageCurrentLevel.averageSelfScore, comp.averageCurrentLevel.requiredLevel)}>
+                      {comp.averageCurrentLevel.averageSelfScore >= comp.averageCurrentLevel.requiredLevel
                         ? "Proficient"
-                        : `Gap: ${(comp.requiredLevel - comp.avgCurrentLevel).toFixed(1)}`}
+                        : `Gap: ${(comp.averageCurrentLevel.requiredLevel - comp.averageCurrentLevel.averageSelfScore).toFixed(1)}`}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -811,8 +739,8 @@ export default function CompetencyManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmitCompetency} className="bg-blue-600 hover:bg-blue-700 text-white">
-              Create Competency
+            <Button onClick={handleSubmitCompetency} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isCreatingCompetency}>
+              {isCreatingCompetency ? "Creating..." : "Create Competency"}
             </Button>
           </div>
         </DialogContent>
@@ -906,8 +834,8 @@ export default function CompetencyManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmitCompetency} className="bg-blue-600 hover:bg-blue-700 text-white">
-              Update Competency
+            <Button onClick={handleSubmitCompetency} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isUpdatingCompetency}>
+              {isUpdatingCompetency ? "Updating..." : "Update Competency"}
             </Button>
           </div>
         </DialogContent>
@@ -949,13 +877,13 @@ export default function CompetencyManagement() {
                 <div className="space-y-2">
                   <Label className="text-gray-400">Employees</Label>
                   <p className="text-white">
-                    {selectedCompetency.assessedEmployees}/{selectedCompetency.totalEmployees}
+                    {selectedCompetency.assessments.length} assessed
                   </p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-gray-400">Avg Performance</Label>
                   <p className="text-white">
-                    {selectedCompetency.avgCurrentLevel.toFixed(1)}/{selectedCompetency.requiredLevel}
+                    {selectedCompetency.averageCurrentLevel.averageSelfScore.toFixed(1)}/{selectedCompetency.averageCurrentLevel.requiredLevel} (Self)
                   </p>
                 </div>
               </div>
@@ -965,15 +893,15 @@ export default function CompetencyManagement() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-300">
-                      Average: {selectedCompetency.avgCurrentLevel.toFixed(1)} / Required:{" "}
-                      {selectedCompetency.requiredLevel}
+                      Average: {selectedCompetency.averageCurrentLevel.averageSelfScore.toFixed(1)} / Required:{" "}
+                      {selectedCompetency.averageCurrentLevel.requiredLevel}
                     </span>
                     <span className="text-gray-400">
-                      {Math.round((selectedCompetency.avgCurrentLevel / selectedCompetency.requiredLevel) * 100)}%
+                      {Math.round((selectedCompetency.averageCurrentLevel.averageSelfScore / selectedCompetency.averageCurrentLevel.requiredLevel) * 100)}%
                     </span>
                   </div>
                   <Progress
-                    value={(selectedCompetency.avgCurrentLevel / selectedCompetency.requiredLevel) * 100}
+                    value={(selectedCompetency.averageCurrentLevel.averageSelfScore / selectedCompetency.averageCurrentLevel.requiredLevel) * 100}
                     className="h-3"
                   />
                 </div>
@@ -1035,33 +963,33 @@ export default function CompetencyManagement() {
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
                           <AvatarFallback className="bg-gray-600 text-white text-xs">
-                            {assessment.employeeName.charAt(0)}
+                            {assessment.employee.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="text-white font-medium">{assessment.employeeName}</div>
-                          <div className="text-sm text-gray-400">{assessment.employeeRole}</div>
+                          <div className="text-white font-medium">{assessment.employee.name}</div>
+                          <div className="text-sm text-gray-400">{assessment.employee.position}</div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-white">Level {assessment.currentLevel}</TableCell>
+                    <TableCell className="text-white">Level {assessment.selfScore}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-300">
-                            {assessment.currentLevel}/{selectedCompetency.requiredLevel}
+                            {assessment.selfScore}/{selectedCompetency.requiredLevel}
                           </span>
                           <span className="text-gray-400">
-                            {Math.round((assessment.currentLevel / selectedCompetency.requiredLevel) * 100)}%
+                            {Math.round((assessment.selfScore / selectedCompetency.requiredLevel) * 100)}%
                           </span>
                         </div>
                         <Progress
-                          value={(assessment.currentLevel / selectedCompetency.requiredLevel) * 100}
+                          value={(assessment.selfScore / selectedCompetency.requiredLevel) * 100}
                           className="h-2"
                         />
                       </div>
                     </TableCell>
-                    <TableCell className="text-gray-300 text-sm">{assessment.lastAssessed}</TableCell>
+                    <TableCell className="text-gray-300 text-sm">{new Date(assessment.createdAt).toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1074,13 +1002,13 @@ export default function CompetencyManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
-                          <DropdownMenuItem
+                          {/* <DropdownMenuItem
                             className="gap-2 text-white hover:bg-gray-700"
                             onClick={() => handleEditAssessmentClick(assessment)}
                           >
                             <Edit size={16} />
                             Edit Assessment
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> */}
                           <DropdownMenuItem
                             className="gap-2 text-blue-400 hover:bg-gray-700"
                             onClick={() => handleEnrollInCourseClick(assessment)}
@@ -1275,11 +1203,11 @@ export default function CompetencyManagement() {
               <Select
                 value={assessmentFormData.employeeName}
                 onValueChange={(value) => {
-                  const employee = employees.find((emp) => emp.name === value)
+                  const employee = employeesData.find((emp: any) => emp.name === value)
                   setAssessmentFormData({
                     ...assessmentFormData,
+                    employeeId: employee ? employee.id : "",
                     employeeName: value,
-                    employeeRole: employee?.role || "",
                   })
                 }}
               >
@@ -1287,9 +1215,9 @@ export default function CompetencyManagement() {
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
-                  {employees.map((employee) => (
+                  {employeesData.map((employee: any) => (
                     <SelectItem key={employee.id} value={employee.name} className="text-white">
-                      {employee.name} - {employee.role}
+                      {employee.name} - {employee.position}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1316,31 +1244,6 @@ export default function CompetencyManagement() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="certificationExpiry" className="text-gray-300">
-                Certification Expiry (Optional)
-              </Label>
-              <Input
-                id="certificationExpiry"
-                type="date"
-                value={assessmentFormData.certificationExpiry}
-                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, certificationExpiry: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="text-gray-300">
-                Notes
-              </Label>
-              <Textarea
-                id="notes"
-                value={assessmentFormData.notes}
-                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, notes: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
-                placeholder="Assessment notes and observations..."
-                rows={3}
-              />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
@@ -1380,17 +1283,6 @@ export default function CompetencyManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="employeeRole" className="text-gray-300">
-                Employee Role
-              </Label>
-              <Input
-                id="employeeRole"
-                value={assessmentFormData.employeeRole}
-                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, employeeRole: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="currentLevel" className="text-gray-300">
                 Current Level
               </Label>
@@ -1411,31 +1303,6 @@ export default function CompetencyManagement() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="certificationExpiry" className="text-gray-300">
-                Certification Expiry (Optional)
-              </Label>
-              <Input
-                id="certificationExpiry"
-                type="date"
-                value={assessmentFormData.certificationExpiry}
-                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, certificationExpiry: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="text-gray-300">
-                Notes
-              </Label>
-              <Textarea
-                id="notes"
-                value={assessmentFormData.notes}
-                onChange={(e) => setAssessmentFormData({ ...assessmentFormData, notes: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
-                placeholder="Assessment notes and observations..."
-                rows={3}
-              />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
@@ -1528,8 +1395,8 @@ export default function CompetencyManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={handleDeleteCompetencyConfirm} className="bg-red-600 hover:bg-red-700 text-white">
-              Delete Competency
+            <Button onClick={handleDeleteCompetencyConfirm} className="bg-red-600 hover:bg-red-700 text-white" disabled={isDeletingCompetency}>
+              {isDeletingCompetency ? "Deleting..." : "Delete Competency"}
             </Button>
           </div>
         </DialogContent>

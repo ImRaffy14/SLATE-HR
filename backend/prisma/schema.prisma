@@ -100,7 +100,8 @@ model Competency {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  role        String          // role this competency applies to
+  requiredLevel Int
+  category    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -118,7 +119,7 @@ model CompetencyAssessment {
   employeeId    String   @db.ObjectId
   competencyId  String   @db.ObjectId
   selfScore     Int
-  hrScore       Int?
+  hrScore       Int
   createdAt     DateTime @default(now())
 
   employee   Employee   @relation(fields: [employeeId], references: [id])

@@ -6,7 +6,9 @@ const urlAPI = import.meta.env.VITE_SERVER_URL;
 // Get all competencies
 export const getCompetencies = async () => {
   try {
-    const result = await axios.get(`${urlAPI}/api/v1/competency/list`);
+    const result = await axios.get(`${urlAPI}/api/v1/competency/list`, {
+      withCredentials: true
+    });
     return result.data.competencies;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -35,10 +37,12 @@ export const createCompetency = async (data: any) => {
 };
 
 // Update a competency
-export const updateCompetency = async (id: string, data: { name: string; description?: string; role: string }) => {
+export const updateCompetency = async (id: string, data: any) => {
   try {
-    const result = await axios.put(`${urlAPI}/api/v1/competency/update/${id}`, data);
-    return result.data.competency;
+    const result = await axios.put(`${urlAPI}/api/v1/competency/update/${id}`, data, {
+      withCredentials: true
+    });
+    return result.data.competencies;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
     if (axiosError.response) throw new Error(axiosError.response.data.error);
@@ -50,7 +54,9 @@ export const updateCompetency = async (id: string, data: { name: string; descrip
 // Delete a competency
 export const deleteCompetency = async (id: string) => {
   try {
-    const result = await axios.delete(`${urlAPI}/api/v1/competency/delete/${id}`);
+    const result = await axios.delete(`${urlAPI}/api/v1/competency/delete/${id}`, {
+      withCredentials: true
+    });
     return result.data;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -74,3 +80,18 @@ export const addAssessment = async (data: any) => {
     else throw new Error("Request failed to be created");
   }
 };
+
+export const getAnalytics = async () => {
+  try {
+    const result = await axios.get(`${urlAPI}/api/v1/competency/analytics`, {
+      withCredentials: true
+    });
+    return result.data.analytics;
+  }
+  catch (error) {
+    const axiosError = error as AxiosError<ErrorResponse>;
+    if (axiosError.response) throw new Error(axiosError.response.data.error);
+    else if (axiosError.request) throw new Error("Network error - no response from server");
+    else throw new Error("Request failed to be created");
+  }
+}

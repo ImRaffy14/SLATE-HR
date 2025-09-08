@@ -17,7 +17,7 @@ export default function FullPageLoader({
   
 
   return (
-    <div className="h-full bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center">
+    <div className="h-full bg-gray-600 dark:bg-gray-900 flex flex-col items-center justify-center">
       {showLogo && <Logo />}
       <Spinner />
       <LoadingMessage message={message} dots={dots} />
