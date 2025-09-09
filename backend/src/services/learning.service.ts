@@ -9,6 +9,8 @@ export class LearningService {
     return prisma.course.findMany({
       include: {
         enrollments: true,
+        feedbacks: true,
+        TrainingSession: true,
       },
     });
   }
@@ -27,7 +29,11 @@ export class LearningService {
   async createCourseService(data: any, userId: string) {
     return prisma.course.create({
       data: {
-        ...data,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        duration: Number(data.duration),
+        courseMaterial: data.materials,
         createdBy: userId,
       },
     });
@@ -37,7 +43,11 @@ export class LearningService {
     return prisma.course.update({
       where: { id },
       data: {
-        ...data,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        duration: Number(data.duration),
+        courseMaterial: data.materials,
         updatedBy: userId,
       },
     });

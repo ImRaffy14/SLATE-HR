@@ -6,7 +6,9 @@ const urlAPI = import.meta.env.VITE_SERVER_URL;
 // Courses
 export const getCourses = async () => {
   try {
-    const result = await axios.get(`${urlAPI}/api/v1/learning/courses`);
+    const result = await axios.get(`${urlAPI}/api/v1/learning/courses`, {
+      withCredentials: true,
+    });
     return result.data.courses;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -18,7 +20,9 @@ export const getCourses = async () => {
 
 export const getCourseById = async (id: string) => {
   try {
-    const result = await axios.get(`${urlAPI}/api/v1/learning/courses/${id}`);
+    const result = await axios.get(`${urlAPI}/api/v1/learning/courses/${id}`, {
+      withCredentials: true,
+    });
     return result.data.course;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -28,9 +32,11 @@ export const getCourseById = async (id: string) => {
   }
 };
 
-export const createCourse = async (data: FormData) => {
+export const createCourse = async (data: any) => {
   try {
-    const result = await axios.post(`${urlAPI}/api/v1/learning/courses`, data);
+    const result = await axios.post(`${urlAPI}/api/v1/learning/courses`, data, {
+      withCredentials: true,
+    });
     return result.data.course;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -40,9 +46,11 @@ export const createCourse = async (data: FormData) => {
   }
 };
 
-export const updateCourse = async (id: string, data: FormData) => {
+export const updateCourse = async (id: string, data: any) => {
   try {
-    const result = await axios.put(`${urlAPI}/api/v1/learning/courses/${id}`, data);
+    const result = await axios.put(`${urlAPI}/api/v1/learning/courses/${id}`, data, {
+      withCredentials: true,
+    });
     return result.data.course;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -65,9 +73,11 @@ export const deleteCourse = async (id: string) => {
 };
 
 // Enrollments
-export const enrollEmployee = async (data: { employeeId: string; courseId: string }) => {
+export const enrollEmployee = async (data:any) => {
   try {
-    const result = await axios.post(`${urlAPI}/api/v1/learning/enrollments`, data);
+    const result = await axios.post(`${urlAPI}/api/v1/learning/enrollments`, data, {
+      withCredentials: true,
+    });
     return result.data.enrollment;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -113,3 +123,17 @@ export const getCourseFeedback = async (courseId: string) => {
     else throw new Error("Request failed to be created");
   }
 };
+
+export const deleteEnrollment = async (id: string) => {
+  try {
+    const result = await axios.delete(`${urlAPI}/api/v1/enrollments/${id}`, {
+      withCredentials: true,
+    });
+    return result.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<ErrorResponse>;
+    if (axiosError.response) throw new Error(axiosError.response.data.error);
+    else if (axiosError.request) throw new Error("Network error - no response from server");
+    else throw new Error("Request failed to be created");
+  }
+}

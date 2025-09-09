@@ -13,10 +13,11 @@ const router = express.Router();
 // V1 Routes
 router.use('/users', users);
 router.use('/auth', auth);
-router.use('/learning', learning);
-router.use('/enrollments', enrollment);
+router.use('/learning', verifyToken, learning);
+router.use('/enrollments', verifyToken, enrollment);
 router.use('/competency', verifyToken, competency);
 router.use('/performance', performance);
 router.use('/employee', verifyToken, employee);
 
 export default router;
+    

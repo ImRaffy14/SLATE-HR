@@ -21,88 +21,15 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  createCourse,
+  getCourses,
+  updateCourse
+} from "@/api/learning"
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
+import { toast } from "react-hot-toast"
 
 // Mock data
-const courses = [
-  {
-    id: 1,
-    title: "CDL Training Program",
-    type: "Hybrid",
-    duration: "80 hours",
-    enrolled: 15,
-    completed: 12,
-    rating: 4.8,
-    status: "Active",
-    category: "Safety & Compliance",
-    description:
-      "Comprehensive commercial driver's license training program covering safety regulations, vehicle inspection, and driving techniques.",
-    instructor: "Mike Johnson",
-    prerequisites: "Valid driver's license, clean driving record",
-    materials: "Training manual, practice tests, simulator access",
-  },
-  {
-    id: 2,
-    title: "DOT Regulations & Compliance",
-    type: "Online",
-    duration: "16 hours",
-    enrolled: 8,
-    completed: 6,
-    rating: 4.5,
-    status: "Active",
-    category: "Safety & Compliance",
-    description: "Essential training on Department of Transportation regulations and compliance requirements.",
-    instructor: "Sarah Davis",
-    prerequisites: "None",
-    materials: "Online modules, regulation handbook",
-  },
-  {
-    id: 3,
-    title: "Warehouse Safety Operations",
-    type: "Offline",
-    duration: "24 hours",
-    enrolled: 20,
-    completed: 18,
-    rating: 4.9,
-    status: "Active",
-    category: "Operations",
-    description:
-      "Comprehensive warehouse safety training covering equipment operation, hazard identification, and emergency procedures.",
-    instructor: "Tom Wilson",
-    prerequisites: "Basic safety orientation",
-    materials: "Safety manual, equipment guides, PPE",
-  },
-  {
-    id: 4,
-    title: "Fleet Management Systems",
-    type: "Online",
-    duration: "32 hours",
-    enrolled: 12,
-    completed: 10,
-    rating: 4.3,
-    status: "Active",
-    category: "Technology",
-    description: "Training on fleet management software, GPS tracking, and maintenance scheduling systems.",
-    instructor: "Lisa Chen",
-    prerequisites: "Basic computer skills",
-    materials: "Software access, user manuals",
-  },
-  {
-    id: 5,
-    title: "Leadership in Logistics",
-    type: "Hybrid",
-    duration: "40 hours",
-    enrolled: 18,
-    completed: 15,
-    rating: 4.6,
-    status: "Draft",
-    category: "Leadership",
-    description: "Leadership development program specifically designed for logistics and transportation supervisors.",
-    instructor: "Robert Martinez",
-    prerequisites: "2+ years supervisory experience",
-    materials: "Leadership handbook, case studies",
-  },
-]
-
 const courseTypes = ["All", "Online", "Offline", "Hybrid"]
 const categories = ["All", "Safety & Compliance", "Operations", "Technology", "Leadership"]
 
@@ -154,17 +81,57 @@ export default function LearningManagement() {
 
   const [formData, setFormData] = useState({
     title: "",
-    type: "",
     category: "",
     duration: "",
     description: "",
-    instructor: "",
-    prerequisites: "",
     materials: "",
     status: "Draft",
   })
 
-  const filteredCourses = courses.filter((course) => {
+  const queryClient = useQueryClient()
+
+  const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
+    queryKey: ["courses"],
+    queryFn: getCourses,
+  })
+
+  const { mutate: createCourseMutate, isPending: isCreatingCourse } = useMutation({
+    mutationFn: (data: any) => createCourse(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] })
+      setIsCreateModalOpen(false)
+      setIsEditModalOpen(false)
+      setFormData({
+        title: "",
+        category: "",
+        duration: "",
+        description: "",
+        materials: "",
+        status: "Draft",
+      })
+      toast.success("Course created successfully!")
+    },
+  })
+
+  const { mutate: updateCourseMutate, isPending: isUpdatingCourse } = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateCourse(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] })
+      setIsEditModalOpen(false)
+      setSelectedCourse(null)
+      setFormData({
+        title: "",
+        category: "",
+        duration: "",
+        description: "",
+        materials: "",
+        status: "Draft",
+      })
+      toast.success("Course updated successfully!")
+    },
+  })
+
+  const filteredCourses = courses.filter((course: any) => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = selectedType === "All" || course.type === selectedType
     const matchesCategory = selectedCategory === "All" || course.category === selectedCategory
@@ -174,12 +141,9 @@ export default function LearningManagement() {
   const handleCreateCourse = () => {
     setFormData({
       title: "",
-      type: "",
       category: "",
       duration: "",
       description: "",
-      instructor: "",
-      prerequisites: "",
       materials: "",
       status: "Draft",
     })
@@ -195,13 +159,10 @@ export default function LearningManagement() {
     setSelectedCourse(course)
     setFormData({
       title: course.title,
-      type: course.type,
       category: course.category,
       duration: course.duration,
       description: course.description,
-      instructor: course.instructor,
-      prerequisites: course.prerequisites,
-      materials: course.materials,
+      materials: course.courseMaterial,
       status: course.status,
     })
     setIsEditModalOpen(true)
@@ -212,9 +173,13 @@ export default function LearningManagement() {
   }
 
   const handleSubmit = () => {
-    console.log("[v0] Form submitted:", formData)
-    setIsCreateModalOpen(false)
-    setIsEditModalOpen(false)
+    createCourseMutate(formData)
+  }
+
+  const handleSubmitUpdate = () => {
+    if (selectedCourse) {
+      updateCourseMutate({ id: selectedCourse.id, data: formData })
+    }
   }
 
   const getStatusBadgeColor = (status: string) => {
@@ -395,17 +360,15 @@ export default function LearningManagement() {
             <TableHeader>
               <TableRow className="border-gray-600">
                 <TableHead className="text-gray-300 font-semibold">Course</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Type</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Duration</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Enrollment</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Completion Rate</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Rating</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Status</TableHead>
                 <TableHead className="text-right text-gray-300 font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCourses.map((course) => (
+              {filteredCourses.map((course: any) => (
                 <TableRow key={course.id} className="border-gray-600 hover:bg-gray-700">
                   <TableCell>
                     <div>
@@ -413,26 +376,32 @@ export default function LearningManagement() {
                       <div className="text-sm text-gray-400">{course.category}</div>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={getTypeBadgeColor(course.type)}>{course.type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-white">{course.duration}</TableCell>
-                  <TableCell className="text-white">{course.enrolled} enrolled</TableCell>
+                  <TableCell className="text-white">{course.duration} minutes</TableCell>
+                  <TableCell className="text-white">{course.enrollments.length} enrolled</TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-300">
-                          {course.completed}/{course.enrolled}
+                          {(course.enrollments.filter((e: any) => e.status === "COMPLETED").length)}/{course.enrollments.length}
                         </span>
-                        <span className="text-gray-400">{Math.round((course.completed / course.enrolled) * 100)}%</span>
+                       <span className="text-gray-400">
+                          {course.enrollments.length > 0
+                            ? ((course.enrollments.filter((e: any) => e.status === "COMPLETED").length / course.enrollments.length) * 100).toFixed(0)
+                            : 0}% 
+                        </span>
+
                       </div>
-                      <Progress value={(course.completed / course.enrolled) * 100} className="h-2" />
+                      <Progress
+                        value={
+                          (course.enrollments.filter((e: any) => e.status === "COMPLETED").length /
+                            course.enrollments.length) *
+                          100
+                        }
+                        className="h-2"
+                      />
                     </div>
                   </TableCell>
-                  <TableCell className="text-white">⭐ {course.rating}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusBadgeColor(course.status)}>{course.status}</Badge>
-                  </TableCell>
+                  <TableCell className="text-white">⭐ {course.rating || 0}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -498,41 +467,8 @@ export default function LearningManagement() {
                   placeholder="Enter course title"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="instructor" className="text-gray-300">
-                  Instructor
-                </Label>
-                <Input
-                  id="instructor"
-                  value={formData.instructor}
-                  onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
-                  className="bg-gray-700 border-2 border-gray-600 text-white"
-                  placeholder="Enter instructor name"
-                />
-              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="type" className="text-gray-300">
-                  Course Type
-                </Label>
-                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="Online" className="text-white hover:bg-gray-700">
-                      Online
-                    </SelectItem>
-                    <SelectItem value="Offline" className="text-white hover:bg-gray-700">
-                      Offline
-                    </SelectItem>
-                    <SelectItem value="Hybrid" className="text-white hover:bg-gray-700">
-                      Hybrid
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-gray-300">
                   Category
@@ -566,6 +502,7 @@ export default function LearningManagement() {
                 </Label>
                 <Input
                   id="duration"
+                  type="number"
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                   className="bg-gray-700 border-2 border-gray-600 text-white"
@@ -584,18 +521,6 @@ export default function LearningManagement() {
                 className="bg-gray-700 border-2 border-gray-600 text-white"
                 placeholder="Enter course description"
                 rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="prerequisites" className="text-gray-300">
-                Prerequisites
-              </Label>
-              <Input
-                id="prerequisites"
-                value={formData.prerequisites}
-                onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
-                placeholder="Enter prerequisites"
               />
             </div>
             <div className="space-y-2">
@@ -620,8 +545,8 @@ export default function LearningManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
-              Create Course
+            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto" disabled={isCreatingCourse}>
+              {isCreatingCourse ? "Creating..." : "Create Course"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -635,32 +560,14 @@ export default function LearningManagement() {
           </DialogHeader>
           {selectedCourse && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-300 font-semibold">Instructor</Label>
-                  <p className="text-white">{selectedCourse.instructor}</p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-gray-300 font-semibold">Duration</Label>
                   <p className="text-white">{selectedCourse.duration}</p>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-gray-300 font-semibold">Type</Label>
-                  <div className="mt-1">
-                    <Badge className={getTypeBadgeColor(selectedCourse.type)}>{selectedCourse.type}</Badge>
-                  </div>
-                </div>
                 <div>
                   <Label className="text-gray-300 font-semibold">Category</Label>
                   <p className="text-white">{selectedCourse.category}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300 font-semibold">Status</Label>
-                  <div className="mt-1">
-                    <Badge className={getStatusBadgeColor(selectedCourse.status)}>{selectedCourse.status}</Badge>
-                  </div>
                 </div>
               </div>
               <div>
@@ -668,21 +575,17 @@ export default function LearningManagement() {
                 <p className="text-white mt-1">{selectedCourse.description}</p>
               </div>
               <div>
-                <Label className="text-gray-300 font-semibold">Prerequisites</Label>
-                <p className="text-white mt-1">{selectedCourse.prerequisites}</p>
-              </div>
-              <div>
                 <Label className="text-gray-300 font-semibold">Course Materials</Label>
-                <p className="text-white mt-1">{selectedCourse.materials}</p>
+                <p className="text-white mt-1">{selectedCourse.courseMaterial}</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-gray-300 font-semibold">Enrolled</Label>
-                  <p className="text-white">{selectedCourse.enrolled} students</p>
+                  <p className="text-white">{selectedCourse.enrollments.length} students</p>
                 </div>
                 <div>
                   <Label className="text-gray-300 font-semibold">Completed</Label>
-                  <p className="text-white">{selectedCourse.completed} students</p>
+                  <p className="text-white">{selectedCourse.enrollments.filter((e: any) => e.status === "COMPLETED").length} students</p>
                 </div>
                 <div>
                   <Label className="text-gray-300 font-semibold">Rating</Label>
@@ -722,40 +625,8 @@ export default function LearningManagement() {
                   className="bg-gray-700 border-2 border-gray-600 text-white"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-instructor" className="text-gray-300">
-                  Instructor
-                </Label>
-                <Input
-                  id="edit-instructor"
-                  value={formData.instructor}
-                  onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
-                  className="bg-gray-700 border-2 border-gray-600 text-white"
-                />
-              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-type" className="text-gray-300">
-                  Type
-                </Label>
-                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="Online" className="text-white hover:bg-gray-700">
-                      Online
-                    </SelectItem>
-                    <SelectItem value="Offline" className="text-white hover:bg-gray-700">
-                      Offline
-                    </SelectItem>
-                    <SelectItem value="Hybrid" className="text-white hover:bg-gray-700">
-                      Hybrid
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category" className="text-gray-300">
                   Category
@@ -794,27 +665,6 @@ export default function LearningManagement() {
                   className="bg-gray-700 border-2 border-gray-600 text-white"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-status" className="text-gray-300">
-                  Status
-                </Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="Active" className="text-white hover:bg-gray-700">
-                      Active
-                    </SelectItem>
-                    <SelectItem value="Draft" className="text-white hover:bg-gray-700">
-                      Draft
-                    </SelectItem>
-                    <SelectItem value="Archived" className="text-white hover:bg-gray-700">
-                      Archived
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-description" className="text-gray-300">
@@ -826,17 +676,6 @@ export default function LearningManagement() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="bg-gray-700 border-2 border-gray-600 text-white"
                 rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-prerequisites" className="text-gray-300">
-                Prerequisites
-              </Label>
-              <Input
-                id="edit-prerequisites"
-                value={formData.prerequisites}
-                onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -860,8 +699,8 @@ export default function LearningManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
-              Save Changes
+            <Button onClick={handleSubmitUpdate} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto" disabled={isUpdatingCourse}>
+              {isUpdatingCourse ? "Updating..." : "Update Course"}
             </Button>
           </DialogFooter>
         </DialogContent>

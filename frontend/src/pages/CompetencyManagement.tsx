@@ -54,20 +54,12 @@ import {
   getCompetencies,
   getAnalytics
 } from "@/api/competency"
+import { enrollEmployee, getCourses } from "@/api/learning"
 import { getEmployees } from "@/api/employee"
 import { toast } from "react-hot-toast"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import FullPageLoader from "@/components/FullpageLoader"
 
-
-const employees = [
-  { id: "1", name: "Mike Rodriguez", role: "Long-Haul Driver" },
-  { id: "2", name: "Sarah Johnson", role: "Dispatcher" },
-  { id: "3", name: "David Chen", role: "Warehouse Supervisor" },
-  { id: "4", name: "Lisa Thompson", role: "Safety Manager" },
-  { id: "5", name: "James Wilson", role: "Forklift Operator" },
-  { id: "6", name: "Maria Garcia", role: "Customer Relations" },
-]
 
 const skillGapData = [
   { category: "Safety & Compliance", gaps: 3, total: 8 },
@@ -76,22 +68,6 @@ const skillGapData = [
   { category: "Soft Skills", gaps: 0, total: 4 },
 ]
 
-const competencyRadarData = [
-  { skill: "Safety", current: 3.5, required: 4.5 },
-  { skill: "Operations", current: 3.8, required: 4.0 },
-  { skill: "Technical", current: 2.9, required: 4.2 },
-  { skill: "Compliance", current: 3.2, required: 4.8 },
-  { skill: "Leadership", current: 3.0, required: 3.5 },
-  { skill: "Communication", current: 3.6, required: 3.8 },
-]
-
-const roleDistributionData = [
-  { name: "Drivers", value: 45, color: "#3B82F6" },
-  { name: "Warehouse", value: 25, color: "#10B981" },
-  { name: "Dispatchers", value: 15, color: "#F59E0B" },
-  { name: "Mechanics", value: 10, color: "#EF4444" },
-  { name: "Management", value: 5, color: "#8B5CF6" },
-]
 
 const categories = ["All", "Safety & Compliance", "Operations", "Technical", "Soft Skills"]
 
@@ -128,12 +104,8 @@ export default function CompetencyManagement() {
   const [isCourseEnrollmentModalOpen, setIsCourseEnrollmentModalOpen] = useState(false)
   const [selectedAssessmentForCourse, setSelectedAssessmentForCourse] = useState<any>(null)
   const [courseEnrollmentForm, setCourseEnrollmentForm] = useState({
-    courseTitle: "",
-    courseProvider: "",
-    courseDuration: "",
-    courseDescription: "",
-    startDate: "",
-    priority: "medium",
+    courseId: "",
+    employeeId: "",
   })
 
   const queryClient = useQueryClient()
@@ -146,6 +118,11 @@ export default function CompetencyManagement() {
   const { data: analyticsData, isLoading: isAnalyticsLoading } = useQuery({
     queryKey: ["competencyAnalytics"],
     queryFn: getAnalytics,
+  })
+
+  const { data: coursesData = [], isLoading: isCoursesLoading } = useQuery({
+    queryKey: ["courses"],
+    queryFn: getCourses,
   })
 
   console.log("Analytics Data:", analyticsData)
@@ -189,6 +166,19 @@ export default function CompetencyManagement() {
       queryClient.invalidateQueries({ queryKey: ["competencyAnalytics"] })
       toast.success("Assessment added successfully!")
       setIsCreateAssessmentModalOpen(false)
+    },
+  })
+
+  const { mutate: enrollEmployeeMutate, isPending: isEnrollingEmployee } = useMutation({
+    mutationFn: enrollEmployee,
+    onSuccess: () => {
+      toast.success("Employee enrolled in course successfully!")
+      setIsCourseEnrollmentModalOpen(false)
+      setCourseEnrollmentForm({
+        courseId: "",
+        employeeId: "",
+      })
+      setSelectedAssessmentForCourse(null)
     },
   })
 
@@ -290,26 +280,9 @@ export default function CompetencyManagement() {
   const handleCourseEnrollmentSubmit = () => {
     const enrollmentData = {
       employeeId: selectedAssessmentForCourse?.employeeId,
-      employeeName: selectedAssessmentForCourse?.employeeName,
-      competencyId: selectedCompetency?.id,
-      competencyName: selectedCompetency?.name,
-      currentLevel: selectedAssessmentForCourse?.currentLevel,
-      requiredLevel: selectedCompetency?.requiredLevel,
-      course: courseEnrollmentForm,
-      enrollmentDate: new Date().toISOString(),
+      courseId: courseEnrollmentForm.courseId,
     }
-
-    enrollEmployeeInCourse(enrollmentData)
-    setIsCourseEnrollmentModalOpen(false)
-    setCourseEnrollmentForm({
-      courseTitle: "",
-      courseProvider: "",
-      courseDuration: "",
-      courseDescription: "",
-      startDate: "",
-      priority: "medium",
-    })
-    setSelectedAssessmentForCourse(null)
+    enrollEmployeeMutate(enrollmentData)
   }
 
   const handleSubmitCompetency = async () => {
@@ -1059,104 +1032,41 @@ export default function CompetencyManagement() {
               <div className="flex items-center gap-3 mb-2">
                 <Avatar className="w-10 h-10">
                   <AvatarFallback className="bg-gray-600 text-white">
-                    {selectedAssessmentForCourse?.employeeName?.charAt(0)}
+                    {selectedAssessmentForCourse?.employee?.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="text-white font-medium">{selectedAssessmentForCourse?.employeeName}</div>
-                  <div className="text-sm text-gray-400">{selectedAssessmentForCourse?.employeeRole}</div>
+                  <div className="text-white font-medium">{selectedAssessmentForCourse?.employee.name}</div>
+                  <div className="text-sm text-gray-400">{selectedAssessmentForCourse?.employee.position}</div>
                 </div>
               </div>
               <div className="text-sm text-gray-300">
-                Current Level: {selectedAssessmentForCourse?.currentLevel} / {selectedCompetency?.requiredLevel}
+                Current Level: {selectedAssessmentForCourse?.selfScore} / {selectedAssessmentForCourse?.hrScore}
                 <span className="ml-2 text-orange-400">
-                  (Gap: {selectedCompetency?.requiredLevel - selectedAssessmentForCourse?.currentLevel})
+                  (Gap: {selectedAssessmentForCourse?.gap})
                 </span>
               </div>
             </div>
 
             {/* Course Details Form */}
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="courseTitle" className="text-white">
-                  Course Title *
-                </Label>
-                <Input
-                  id="courseTitle"
-                  value={courseEnrollmentForm.courseTitle}
-                  onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseTitle: e.target.value }))}
-                  placeholder="e.g., Advanced JavaScript Programming"
-                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                />
-              </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="courseProvider" className="text-white">
-                    Course Provider *
-                  </Label>
-                  <Input
-                    id="courseProvider"
-                    value={courseEnrollmentForm.courseProvider}
-                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseProvider: e.target.value }))}
-                    placeholder="e.g., Coursera, Udemy, Internal"
-                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="courseDuration" className="text-white">
-                    Duration *
-                  </Label>
-                  <Input
-                    id="courseDuration"
-                    value={courseEnrollmentForm.courseDuration}
-                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseDuration: e.target.value }))}
-                    placeholder="e.g., 4 weeks, 20 hours"
-                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="courseDescription" className="text-white">
-                  Course Description
-                </Label>
-                <textarea
-                  id="courseDescription"
-                  value={courseEnrollmentForm.courseDescription}
-                  onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseDescription: e.target.value }))}
-                  placeholder="Brief description of what the course covers..."
-                  className="w-full min-h-[80px] px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate" className="text-white">
-                    Start Date *
-                  </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={courseEnrollmentForm.startDate}
-                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, startDate: e.target.value }))}
-                    className="bg-gray-700 border-gray-600 text-white"
-                  />
-                </div>
                 <div>
                   <Label htmlFor="priority" className="text-white">
-                    Priority
+                    Course
                   </Label>
                   <select
                     id="priority"
-                    value={courseEnrollmentForm.priority}
-                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                    value={courseEnrollmentForm.courseId}
+                    onChange={(e) => setCourseEnrollmentForm((prev) => ({ ...prev, courseId: e.target.value }))}
+                    className="w-full px-3 py-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
+                    {coursesData.map((course: any) => (
+                      <option key={course.title} value={course.id} className="text-black">
+                        {course.title} - {course.category} ({course.duration} minutes)
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1174,14 +1084,12 @@ export default function CompetencyManagement() {
             <Button
               onClick={handleCourseEnrollmentSubmit}
               disabled={
-                !courseEnrollmentForm.courseTitle ||
-                !courseEnrollmentForm.courseProvider ||
-                !courseEnrollmentForm.courseDuration ||
-                !courseEnrollmentForm.startDate
+                !courseEnrollmentForm.courseId ||
+                isEnrollingEmployee
               }
               className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
             >
-              Enroll Employee
+              { isEnrollingEmployee ? "Enrolling..." : "Enroll in Course" }
             </Button>
           </div>
         </DialogContent>
