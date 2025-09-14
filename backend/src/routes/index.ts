@@ -6,6 +6,8 @@ import enrollment from './v1/enrollment.routes';
 import competency from './v1/competency.routes';
 import performance from './v1/performance.route';
 import employee from './v1/employee.routes';
+import training from './v1/training.routes';
+import succession from './v1/succession.route';
 import { verifyToken } from '../middlewares/verifyToken';
 
 const router = express.Router();
@@ -18,6 +20,8 @@ router.use('/enrollments', verifyToken, enrollment);
 router.use('/competency', verifyToken, competency);
 router.use('/performance', performance);
 router.use('/employee', verifyToken, employee);
+router.use('/training', verifyToken, training);
+router.use('/succession', verifyToken, succession);
 
 export default router;
     

@@ -4,15 +4,41 @@ export class TrainingService {
   // =======================
   // Training Sessions
   // =======================
-  async createTrainingSessionService(data: any) {
+  async createTrainingSessionService(data: any, userId: any) {
     return await prisma.trainingSession.create({
-      data,
+      data: {
+        courseId: data.courseId,
+        date: new Date(data.date),
+        time: data.time,
+        location: data.location,
+        trainer: data.instructor,
+        duration: data.duration,
+        title: data.title,
+        description: data.description,
+        capacity: Number(data.capacity),
+        createdBy: userId,
+        status: "Scheduled",
+
+        records: {
+          create: data.selectedEnrollees.map((employeeId: string) => ({
+            employeeId,
+            attendance: false,
+          })),
+        },
+      },
+      include: {
+        records: {
+          include: {
+            employee: true,
+          },
+        },
+      },
     });
   }
 
   async getAllTrainingSessionsService() {
     return await prisma.trainingSession.findMany({
-      include: { course: true, records: true },
+      include: { course: true, records: { include: { employee: true } } },
     });
   }
 
@@ -23,12 +49,40 @@ export class TrainingService {
     });
   }
 
-  async updateTrainingSessionService(id: string, data: any) {
+  async updateTrainingSessionService(id: string, data: any, userId: any) {
     return await prisma.trainingSession.update({
       where: { id },
-      data,
+      data: {
+        courseId: data.courseId,
+        date: new Date(data.date),
+        time: data.time,
+        location: data.location,
+        trainer: data.instructor,
+        duration: data.duration,
+        title: data.title,
+        description: data.description,
+        capacity: Number(data.capacity),
+        status: data.status,
+        updatedBy: userId,
+
+        records: {
+          deleteMany: {}, // delete all current records for this session
+          create: data.selectedEnrollees.map((employeeId: string) => ({
+            employeeId,
+            attendance: false,
+          })),
+        },
+      },
+      include: {
+        records: {
+          include: {
+            employee: true,
+          },
+        },
+      },
     });
   }
+
 
   async deleteTrainingSessionService(id: string) {
     return await prisma.trainingSession.delete({

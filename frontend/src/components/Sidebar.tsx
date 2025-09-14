@@ -1,86 +1,78 @@
-import { useState } from "react";
-import {  
-  Users, 
-  BarChart3, 
-  LogOut, 
-  Menu,
-} from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Button } from '@/components/ui/button';
-import { logout } from "@/api/auth";
-import toast from "react-hot-toast";
-import { useAuth } from "@/context/authContext";
+"use client"
+
+import { useState } from "react"
+import { Users, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban } from "lucide-react"
+import { NavLink, useNavigate } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { logout } from "@/api/auth"
+import toast from "react-hot-toast"
+import { useAuth } from "@/context/authContext"
 
 function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  const isAdmin = user?.role?.includes("ADMIN");
+  const [collapsed, setCollapsed] = useState(false)
+  const navigate = useNavigate()
+  const { user } = useAuth()
 
-  const baseMenuItems = [
-    { id: "dashboard", path: "/", icon: <BarChart3 size={20} />, label: "Dashboard" },
-  ];
+  const isAdmin = user?.role?.includes("ADMIN")
+
+  const baseMenuItems = [{ id: "dashboard", path: "/", icon: <BarChart3 size={20} />, label: "Dashboard" }]
 
   const adminMenuItems = [
-    { id: "users", path: "/users", icon: <Users size={20} />, label: "Users" },
-    { id: "competencies", path: "/competencies", icon: <Users size={20} />, label: "Competency Management" },
-    { id: "learning", path: "/learning", icon: <Users size={20} />, label: "Learning Management" },
-    { id: "performance", path: "/performance", icon: <Users size={20} />, label: "Performance Management" },
-    { id: "succession", path: "/succession", icon: <Users size={20} />, label: "Succession Planning" },
-    { id: "training", path: "/training", icon: <Users size={20} />, label: "Training Programs" },
-  ];
+    { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
+    { id: "learning", path: "/learning", icon: <BookPlus size={20} />, label: "Learning Management" },
+    { id: "training", path: "/training", icon: <RailSymbol size={20} />, label: "Training Management" },
+    { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
+    { id: "performance", path: "/performance", icon: <FolderKanban size={20} />, label: "Performance Analysis" },
+    { id: "users", path: "/users", icon: <Users size={20} />, label: "User Management" },
+  ]
 
-  const menuItems = [
-    ...baseMenuItems,
-    ...(isAdmin ? adminMenuItems : []),
-  ];
+  const menuItems = [...baseMenuItems, ...(isAdmin ? adminMenuItems : [])]
 
   const handleLogout = async () => {
     try {
-      const result = await logout();
-      toast.success(result.message);
-      navigate('/login');
+      const result = await logout()
+      toast.success(result.message)
+      navigate("/login")
     } catch (error) {
-      toast.error("Failed to logout");
+      toast.error("Failed to logout")
     }
-  };
+  }
 
   return (
-    <div 
-      className={`bg-gray-900 text-gray-200 
+    <div
+      className={`bg-slate-800 text-slate-100 border-r border-slate-700
       ${collapsed ? "w-16" : "w-64"} 
       flex flex-col transition-all duration-300`}
     >
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-800">
-        {!collapsed && <h1 className="text-lg font-semibold text-gray-100">Admin Panel</h1>}
-        <Button 
-          variant="ghost" 
-          size="icon" 
+      <div className="p-4 flex items-center justify-between border-b border-slate-700">
+        {!collapsed && <h1 className="text-lg font-semibold text-white">Admin Panel</h1>}
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="text-gray-400 hover:bg-gray-800"
+          className="text-slate-200 hover:bg-slate-400 hover:text-white"
         >
           <Menu size={20} />
         </Button>
       </div>
-      
+
       {/* Menu Items */}
       <div className="flex-1 py-4">
-        <nav className="px-2 space-y-1">
+        <nav className="px-2 space-y-3">
           {menuItems.map((item) => (
             <NavLink
               key={item.id}
               to={item.path}
               end
-              className={({ isActive }) => 
+              className={({ isActive }) =>
                 `flex items-center ${collapsed ? "justify-center" : "justify-start"} 
                  px-3 py-2 w-full rounded-md transition-colors duration-200
                  ${
-                   isActive 
-                     ? "bg-gray-800 text-white font-medium" 
-                     : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                   isActive
+                     ? "bg-slate-600 text-white font-semibold shadow-sm"
+                     : "text-white hover:bg-slate-500 hover:text-white"
                  }`
               }
             >
@@ -90,13 +82,13 @@ function Sidebar() {
           ))}
         </nav>
       </div>
-      
+
       {/* Logout */}
-      <div className="p-4 border-t border-gray-800">
-        <Button 
+      <div className="p-4 border-t border-slate-700">
+        <Button
           variant="ghost"
           className={`w-full justify-${collapsed ? "center" : "start"} 
-          text-red-500 hover:bg-red-900/30 transition-colors`}
+          text-red-300 hover:bg-red-600 hover:text-white transition-colors`}
           onClick={handleLogout}
         >
           <LogOut size={20} className="flex-shrink-0" />
@@ -104,7 +96,7 @@ function Sidebar() {
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
-export default Sidebar;
+export default Sidebar

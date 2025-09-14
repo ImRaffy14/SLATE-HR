@@ -15,10 +15,10 @@ function Navbar() {
         <div className="px-6 py-3 flex items-center justify-end">
 
             <div className="flex items-center gap-4">
-                <Button size="icon">
+                <Button size="icon" className="bg-slate-800 hover:bg-slate-400">
                     <Bell size={20} className="text-white"/>
                 </Button>
-                <Button size="icon">
+                <Button size="icon" className="bg-slate-800 hover:bg-slate-400">
                     <HelpCircle size={20} className="text-white"/>
                 </Button>
                 <Avatar className="h-11 w-11">

@@ -14,10 +14,10 @@ const MainLayout = () => {
         <div className="flex h-screen bg-gray-100 ">
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="bg-gray-900 shadow-sm">
+                <header className="bg-slate-800 shadow-sm">
                     <Navbar />
                 </header>
-                <main className="flex-1 overflow-y-auto p-6 bg-gray-600">
+                <main className="flex-1 overflow-y-auto p-6 bg-gray-100">
                     <Outlet />
                 </main>
             </div>

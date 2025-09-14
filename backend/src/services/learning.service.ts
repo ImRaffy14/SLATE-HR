@@ -8,7 +8,11 @@ export class LearningService {
   async getCoursesService() {
     return prisma.course.findMany({
       include: {
-        enrollments: true,
+        enrollments: {
+          include: {
+            employee: true,
+          },
+        },
         feedbacks: true,
         TrainingSession: true,
       },

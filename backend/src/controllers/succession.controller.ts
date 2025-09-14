@@ -7,7 +7,11 @@ export class SuccessionController {
 
   // Create succession plan entry
   createSuccessionPlan = asyncHandler(async (req: Request, res: Response) => {
-    const plan = await this.successionService.createSuccessionPlanService(req.body);
+    const userId = req.user?.userId;
+    const plan = await this.successionService.createSuccessionPlanService(
+      req.body,
+       userId,
+    );
     res.status(201).json({
       status: "success",
       message: "Succession plan created successfully",

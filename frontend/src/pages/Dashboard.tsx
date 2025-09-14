@@ -28,7 +28,7 @@ const kpiData = [
     change: "+12",
     changeType: "positive",
     icon: Users,
-    color: "text-blue-400",
+    color: "text-blue-600",
   },
   {
     title: "Active Drivers",
@@ -36,7 +36,7 @@ const kpiData = [
     change: "+5",
     changeType: "positive",
     icon: Truck,
-    color: "text-green-400",
+    color: "text-green-600",
   },
   {
     title: "Training Completion",
@@ -44,7 +44,7 @@ const kpiData = [
     change: "+3%",
     changeType: "positive",
     icon: BookOpen,
-    color: "text-purple-400",
+    color: "text-purple-600",
   },
   {
     title: "Safety Score",
@@ -52,7 +52,7 @@ const kpiData = [
     change: "-0.8",
     changeType: "negative",
     icon: Target,
-    color: "text-orange-400",
+    color: "text-orange-600",
   },
 ]
 
@@ -125,39 +125,39 @@ export default function Dashboard() {
   console.log("[v0] Competency distribution data:", competencyDistribution)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Dashboard Overview Header Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
-        <p className="text-gray-300">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
+        <p className="text-sm sm:text-base text-gray-600">
           Comprehensive view of FreightHR operations, performance metrics, and key activities
         </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Cards - Updated colors for light theme and improved mobile responsiveness */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {kpiData.map((kpi, index) => {
           const Icon = kpi.icon
           return (
-            <Card key={index} className="bg-gray-800 border-gray-600 shadow-lg">
-              <CardContent className="p-6">
+            <Card key={index} className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-400 text-sm font-medium">{kpi.title}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{kpi.value}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-gray-500 text-xs sm:text-sm font-medium truncate">{kpi.title}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
                     <div className="flex items-center mt-2">
                       <span
-                        className={`text-sm font-medium ${
-                          kpi.changeType === "positive" ? "text-green-400" : "text-red-400"
+                        className={`text-xs sm:text-sm font-medium ${
+                          kpi.changeType === "positive" ? "text-green-600" : "text-red-600"
                         }`}
                       >
                         {kpi.change}
                       </span>
-                      <span className="text-gray-400 text-sm ml-1">vs last month</span>
+                      <span className="text-gray-500 text-xs sm:text-sm ml-1">vs last month</span>
                     </div>
                   </div>
-                  <div className={`p-3 rounded-full bg-gray-700 ${kpi.color}`}>
-                    <Icon size={24} />
+                  <div className={`p-2 sm:p-3 rounded-full bg-gray-50 ${kpi.color} flex-shrink-0`}>
+                    <Icon size={20} className="sm:w-6 sm:h-6" />
                   </div>
                 </div>
               </CardContent>
@@ -166,28 +166,28 @@ export default function Dashboard() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Department Overview */}
-        <Card className="bg-gray-800 border-gray-600 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        {/* Department Overview - Updated chart colors and improved responsiveness */}
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
               <BarChart3 size={20} />
               Department Overview
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <ChartContainer
               config={{
                 employees: { label: "Employees", color: "#3b82f6" },
                 budget: { label: "Budget ($)", color: "#10b981" },
               }}
-              className="h-[300px]"
+              className="h-[250px] sm:h-[300px]"
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={departmentData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                <BarChart data={departmentData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
+                  <YAxis stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="employees" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -196,27 +196,27 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Training Progress */}
-        <Card className="bg-gray-800 border-gray-600 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+        {/* Training Progress - Updated chart colors and improved responsiveness */}
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
               <BookOpen size={20} />
               Training Progress
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <ChartContainer
               config={{
                 completed: { label: "Completed", color: "#10b981" },
                 scheduled: { label: "Scheduled", color: "#f59e0b" },
               }}
-              className="h-[300px]"
+              className="h-[250px] sm:h-[300px]"
             >
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trainingProgressData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                <LineChart data={trainingProgressData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
+                  <YAxis stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line
                     type="monotone"
@@ -239,29 +239,30 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Competency Distribution */}
-        <Card className="bg-gray-800 border-gray-600 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Competency Distribution - Updated colors and improved mobile layout */}
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
               <Target size={20} />
               Competency Levels
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[250px]">
+          <CardContent className="pt-0">
+            <div className="h-[200px] sm:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={competencyDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
+                    innerRadius={40}
+                    outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
                     label={({ name, value }) => `${name}: ${value}%`}
                     labelLine={false}
+                    fontSize={12}
                   >
                     {competencyDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -273,28 +274,28 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Performance Metrics */}
-        <Card className="bg-gray-800 border-gray-600 lg:col-span-2 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+        {/* Performance Metrics - Updated colors and improved responsiveness */}
+        <Card className="bg-white border-gray-200 lg:col-span-2 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
               <TrendingUp size={20} />
               Performance Metrics
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <ChartContainer
               config={{
                 efficiency: { label: "Efficiency", color: "#3b82f6" },
                 safety: { label: "Safety", color: "#10b981" },
                 satisfaction: { label: "Satisfaction", color: "#f59e0b" },
               }}
-              className="h-[250px]"
+              className="h-[200px] sm:h-[250px]"
             >
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={performanceMetrics}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                <AreaChart data={performanceMetrics} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
+                  <YAxis stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area
                     type="monotone"
@@ -327,26 +328,29 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent Activities */}
-      <Card className="bg-gray-800 border-gray-600 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+      {/* Recent Activities - Updated colors for light theme and improved mobile layout */}
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
             <Clock size={20} />
             Recent Activities
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="pt-0">
+          <div className="space-y-3 sm:space-y-4">
             {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-                <div className="flex items-center gap-3">
+              <div
+                key={activity.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
-                    className={`p-2 rounded-full ${
+                    className={`p-2 rounded-full flex-shrink-0 ${
                       activity.status === "completed"
-                        ? "bg-green-500/20 text-green-400"
+                        ? "bg-green-100 text-green-600"
                         : activity.status === "pending"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-blue-500/20 text-blue-400"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-blue-100 text-blue-600"
                     }`}
                   >
                     {activity.status === "completed" ? (
@@ -357,19 +361,19 @@ export default function Dashboard() {
                       <Clock size={16} />
                     )}
                   </div>
-                  <div>
-                    <p className="text-white font-medium">{activity.message}</p>
-                    <p className="text-gray-400 text-sm">{activity.time}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">{activity.message}</p>
+                    <p className="text-gray-500 text-xs sm:text-sm">{activity.time}</p>
                   </div>
                 </div>
                 <Badge
                   variant="outline"
-                  className={`${
+                  className={`self-start sm:self-center flex-shrink-0 ${
                     activity.status === "completed"
-                      ? "border-green-500 text-green-400"
+                      ? "border-green-200 text-green-700 bg-green-50"
                       : activity.status === "pending"
-                        ? "border-yellow-500 text-yellow-400"
-                        : "border-blue-500 text-blue-400"
+                        ? "border-yellow-200 text-yellow-700 bg-yellow-50"
+                        : "border-blue-200 text-blue-700 bg-blue-50"
                   }`}
                 >
                   {activity.status}

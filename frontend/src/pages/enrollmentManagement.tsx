@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { getCourseById, deleteEnrollment as EnrollmentDelete } from "@/api/learning"
 import { toast } from "react-hot-toast"
+import FullPageLoader from "@/components/FullpageLoader"
 
 // Mock data for enrollments
 const mockEnrollments = [
@@ -82,8 +83,6 @@ const mockEnrollments = [
   },
 ]
 
-
-
 export default function EnrollmentManagement() {
   const { courseId } = useParams()
   const navigate = useNavigate()
@@ -120,15 +119,14 @@ export default function EnrollmentManagement() {
   ]
   const statuses = ["All", "NOT_STARTED", "IN_PROGRESS", "COMPLETED"]
 
-  const filteredEnrollments =
-    courseData.enrollments?.filter((enrollment: any) => {
-      const matchesSearch =
-        enrollment.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        enrollment.employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = statusFilter === "All" || enrollment.status === statusFilter
-      const matchesDepartment = departmentFilter === "All" || enrollment.employee.position === departmentFilter
-      return matchesSearch && matchesStatus && matchesDepartment
-    })
+  const filteredEnrollments = courseData.enrollments?.filter((enrollment: any) => {
+    const matchesSearch =
+      enrollment.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      enrollment.employee.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "All" || enrollment.status === statusFilter
+    const matchesDepartment = departmentFilter === "All" || enrollment.employee.position === departmentFilter
+    return matchesSearch && matchesStatus && matchesDepartment
+  })
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -180,70 +178,82 @@ export default function EnrollmentManagement() {
     }
   }
 
+  if (isLoading) {
+    return <FullPageLoader message="Loading course data..." showLogo={false} />
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={handleBack}
-          className="text-gray-400 hover:text-white hover:bg-gray-700"
+          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
         >
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h2 className="text-2xl font-bold text-white">Manage Enrollments</h2>
-          <p className="text-gray-300">{courseData?.title || "Course"}</p>
+          <h2 className="text-2xl font-bold text-gray-900">Manage Enrollments</h2>
+          <p className="text-gray-600">{courseData?.title || "Course"}</p>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <UserCheck className="h-8 w-8 text-green-400" />
+              <div className="p-2 bg-green-50 rounded-lg">
+                <UserCheck className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-300">Total Enrolled</p>
-                <p className="text-2xl font-bold text-white">{filteredEnrollments.length}</p>
+                <p className="text-sm text-gray-600">Total Enrolled</p>
+                <p className="text-2xl font-bold text-gray-900">{filteredEnrollments.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-blue-400" />
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-300">In Progress</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-gray-900">
                   {filteredEnrollments.filter((e: any) => e.status === "IN_PROGRESS").length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <UserCheck className="h-8 w-8 text-green-400" />
+              <div className="p-2 bg-green-50 rounded-lg">
+                <UserCheck className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-300">Completed</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">
                   {filteredEnrollments.filter((e: any) => e.status === "COMPLETED").length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <UserX className="h-8 w-8 text-gray-400" />
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <UserX className="h-6 w-6 text-gray-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-300">Not Started</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm text-gray-600">Not Started</p>
+                <p className="text-2xl font-bold text-gray-900">
                   {filteredEnrollments.filter((e: any) => e.status === "NOT_STARTED").length}
                 </p>
               </div>
@@ -253,30 +263,30 @@ export default function EnrollmentManagement() {
       </div>
 
       {/* Filters */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-white">Filters</CardTitle>
-          <CardDescription className="text-gray-300">Filter enrolled students</CardDescription>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-gray-900">Filters</CardTitle>
+          <CardDescription className="text-gray-600">Filter enrolled students</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search students..."
-                className="pl-9 bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white"
+                className="pl-9 bg-white border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+              <SelectTrigger className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
                 {statuses.map((status) => (
-                  <SelectItem key={status} value={status} className="text-white hover:bg-gray-700">
+                  <SelectItem key={status} value={status} className="text-gray-900 hover:bg-gray-50 focus:bg-gray-50">
                     {status}
                   </SelectItem>
                 ))}
@@ -284,12 +294,12 @@ export default function EnrollmentManagement() {
             </Select>
 
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+              <SelectTrigger className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                 <SelectValue placeholder="Filter by department" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
                 {departments.map((dept: any) => (
-                  <SelectItem key={dept} value={dept} className="text-white hover:bg-gray-700">
+                  <SelectItem key={dept} value={dept} className="text-gray-900 hover:bg-gray-50 focus:bg-gray-50">
                     {dept}
                   </SelectItem>
                 ))}
@@ -298,7 +308,7 @@ export default function EnrollmentManagement() {
 
             <Button
               variant="outline"
-              className="border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600"
+              className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 hover:text-gray-900"
               onClick={() => {
                 setSearchTerm("")
                 setStatusFilter("All")
@@ -312,86 +322,88 @@ export default function EnrollmentManagement() {
       </Card>
 
       {/* Enrollments Table */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-white">Student Enrollments</CardTitle>
-          <CardDescription className="text-gray-300">{filteredEnrollments.length} students found</CardDescription>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-gray-900">Student Enrollments</CardTitle>
+          <CardDescription className="text-gray-600">{filteredEnrollments.length} students found</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-gray-600">
-                  <TableHead className="text-gray-300 font-semibold min-w-[200px]">Student</TableHead>
-                  <TableHead className="text-gray-300 font-semibold min-w-[120px]">Department</TableHead>
-                  <TableHead className="text-gray-300 font-semibold min-w-[120px]">Enrolled Date</TableHead>
-                  <TableHead className="text-gray-300 font-semibold min-w-[120px]">Status</TableHead>
-                  <TableHead className="text-gray-300 font-semibold min-w-[150px]">Progress</TableHead>
-                  <TableHead className="text-gray-300 font-semibold min-w-[120px]">Last Activity</TableHead>
-                  <TableHead className="text-right text-gray-300 font-semibold min-w-[100px]">Actions</TableHead>
+                <TableRow className="border-b border-gray-200 bg-gray-50">
+                  <TableHead className="text-gray-700 font-semibold min-w-[200px] px-6 py-4">Student</TableHead>
+                  <TableHead className="text-gray-700 font-semibold min-w-[120px] px-6 py-4">Department</TableHead>
+                  <TableHead className="text-gray-700 font-semibold min-w-[120px] px-6 py-4">Enrolled Date</TableHead>
+                  <TableHead className="text-gray-700 font-semibold min-w-[120px] px-6 py-4">Status</TableHead>
+                  <TableHead className="text-gray-700 font-semibold min-w-[150px] px-6 py-4">Progress</TableHead>
+                  <TableHead className="text-gray-700 font-semibold min-w-[120px] px-6 py-4">Last Activity</TableHead>
+                  <TableHead className="text-right text-gray-700 font-semibold min-w-[100px] px-6 py-4">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEnrollments.map((enrollment: any) => (
-                  <TableRow key={enrollment.id} className="border-gray-600 hover:bg-gray-700">
-                    <TableCell>
+                  <TableRow key={enrollment.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <TableCell className="px-6 py-4">
                       <div>
-                        <div className="font-medium text-white">
+                        <div className="font-medium text-gray-900">
                           {enrollment.employee?.name || enrollment.employeeName}
                         </div>
-                        <div className="text-sm text-gray-400">{enrollment.employee?.email || enrollment.email}</div>
+                        <div className="text-sm text-gray-500">{enrollment.employee?.email || enrollment.email}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-white">
+                    <TableCell className="text-gray-900 px-6 py-4">
                       {enrollment.employee?.position || enrollment.department}
                     </TableCell>
-                    <TableCell className="text-white">
+                    <TableCell className="text-gray-900 px-6 py-4">
                       {enrollment.enrolledAt
                         ? new Date(enrollment.enrolledAt).toLocaleDateString()
                         : enrollment.enrolledDate}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6 py-4">
                       <Badge className={getStatusBadgeColor(enrollment.status)}>{enrollment.status}</Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
+                    <TableCell className="px-6 py-4">
+                      <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-300">{enrollment.progress}%</span>
+                          <span className="text-gray-600">{enrollment.progress}%</span>
                         </div>
                         <Progress value={enrollment.progress} className="h-2" />
                       </div>
                     </TableCell>
-                    <TableCell className="text-white">
+                    <TableCell className="text-gray-900 px-6 py-4">
                       {enrollment.lastActivity ? new Date(enrollment.lastActivity).toLocaleDateString() : "N/A"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right px-6 py-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-gray-400 hover:text-white hover:bg-gray-700"
+                            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                           >
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
+                        <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
                           <DropdownMenuItem
-                            className="text-white hover:bg-gray-700 cursor-pointer"
+                            className="text-gray-900 hover:bg-gray-50 focus:bg-gray-50 cursor-pointer"
                             onClick={() => handleViewProgress(enrollment)}
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View Progress
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-white hover:bg-gray-700 cursor-pointer"
+                            className="text-gray-900 hover:bg-gray-50 focus:bg-gray-50 cursor-pointer"
                             onClick={() => handleSendReminder(enrollment)}
                           >
                             <Send className="mr-2 h-4 w-4" />
                             Send Reminder
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-red-400 hover:bg-gray-700 cursor-pointer"
+                            className="text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer"
                             onClick={() => handleUnenroll(enrollment)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -408,33 +420,36 @@ export default function EnrollmentManagement() {
         </CardContent>
       </Card>
 
+      {/* Progress Modal */}
       <Dialog open={isProgressModalOpen} onOpenChange={setIsProgressModalOpen}>
-        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Student Progress Details</DialogTitle>
-            <DialogDescription className="text-gray-300">
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto shadow-xl">
+          <DialogHeader className="border-b border-gray-200 pb-4">
+            <DialogTitle className="text-xl font-bold text-gray-900">Student Progress Details</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Detailed progress information for {selectedEnrollment?.employee?.name || selectedEnrollment?.employeeName}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <Label className="text-sm font-medium text-gray-300">Student Name</Label>
-                <p className="text-white font-medium">
+                <Label className="text-sm font-medium text-gray-700">Student Name</Label>
+                <p className="text-gray-900 font-medium mt-1">
                   {selectedEnrollment?.employee?.name || selectedEnrollment?.employeeName}
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-300">Email</Label>
-                <p className="text-white">{selectedEnrollment?.employee?.email || selectedEnrollment?.email}</p>
+                <Label className="text-sm font-medium text-gray-700">Email</Label>
+                <p className="text-gray-900 mt-1">{selectedEnrollment?.employee?.email || selectedEnrollment?.email}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-300">Department</Label>
-                <p className="text-white">{selectedEnrollment?.employee?.position || selectedEnrollment?.department}</p>
+                <Label className="text-sm font-medium text-gray-700">Department</Label>
+                <p className="text-gray-900 mt-1">
+                  {selectedEnrollment?.employee?.position || selectedEnrollment?.department}
+                </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-300">Enrollment Date</Label>
-                <p className="text-white">
+                <Label className="text-sm font-medium text-gray-700">Enrollment Date</Label>
+                <p className="text-gray-900 mt-1">
                   {selectedEnrollment?.enrolledAt
                     ? new Date(selectedEnrollment.enrolledAt).toLocaleDateString()
                     : selectedEnrollment?.enrolledDate}
@@ -442,27 +457,27 @@ export default function EnrollmentManagement() {
               </div>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-gray-300">Overall Progress</Label>
-              <div className="mt-2 space-y-2">
+            <div className="border-t border-gray-200 pt-6">
+              <Label className="text-sm font-medium text-gray-700">Overall Progress</Label>
+              <div className="mt-3 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">Completion</span>
-                  <span className="text-white font-medium">{selectedEnrollment?.progress}%</span>
+                  <span className="text-gray-600">Completion</span>
+                  <span className="text-gray-900 font-medium">{selectedEnrollment?.progress}%</span>
                 </div>
                 <Progress value={selectedEnrollment?.progress} className="h-3" />
               </div>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-gray-300">Status</Label>
-              <div className="mt-1">
+            <div className="border-t border-gray-200 pt-6">
+              <Label className="text-sm font-medium text-gray-700">Status</Label>
+              <div className="mt-2">
                 <Badge className={getStatusBadgeColor(selectedEnrollment?.status)}>{selectedEnrollment?.status}</Badge>
               </div>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-gray-300">Last Activity</Label>
-              <p className="text-white">
+            <div className="border-t border-gray-200 pt-6">
+              <Label className="text-sm font-medium text-gray-700">Last Activity</Label>
+              <p className="text-gray-900 mt-1">
                 {selectedEnrollment?.lastActivity
                   ? new Date(selectedEnrollment.lastActivity).toLocaleDateString()
                   : "No recent activity"}
@@ -472,28 +487,29 @@ export default function EnrollmentManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Reminder Modal */}
       <Dialog open={isReminderModalOpen} onOpenChange={setIsReminderModalOpen}>
-        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Send Reminder</DialogTitle>
-            <DialogDescription className="text-gray-300">
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto shadow-xl">
+          <DialogHeader className="border-b border-gray-200 pb-4">
+            <DialogTitle className="text-xl font-bold text-gray-900">Send Reminder</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Send a reminder email to {selectedEnrollment?.employee?.name || selectedEnrollment?.employeeName}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-6">
             <div>
-              <Label htmlFor="reminder-message" className="text-sm font-medium text-gray-300">
+              <Label htmlFor="reminder-message" className="text-sm font-medium text-gray-700">
                 Message
               </Label>
               <Textarea
                 id="reminder-message"
                 value={reminderMessage}
                 onChange={(e) => setReminderMessage(e.target.value)}
-                className="mt-1 bg-gray-700 border-gray-600 text-white min-h-[120px] resize-none"
+                className="mt-2 bg-white border border-gray-300 text-gray-900 min-h-[120px] resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder="Enter your reminder message..."
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
               <Button onClick={confirmSendReminder} className="bg-blue-600 hover:bg-blue-700 text-white flex-1">
                 <Send className="mr-2 h-4 w-4" />
                 Send Reminder
@@ -501,7 +517,7 @@ export default function EnrollmentManagement() {
               <Button
                 variant="outline"
                 onClick={() => setIsReminderModalOpen(false)}
-                className="border-gray-600 text-white bg-gray-700 hover:bg-gray-600 flex-1"
+                className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 flex-1"
               >
                 Cancel
               </Button>
@@ -510,23 +526,24 @@ export default function EnrollmentManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Unenroll Modal */}
       <Dialog open={isUnenrollModalOpen} onOpenChange={setIsUnenrollModalOpen}>
-        <DialogContent className="bg-gray-800 border-gray-600 text-white max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-red-400">Confirm Unenrollment</DialogTitle>
-            <DialogDescription className="text-gray-300">
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-md w-[95vw] max-h-[90vh] overflow-y-auto shadow-xl">
+          <DialogHeader className="border-b border-gray-200 pb-4">
+            <DialogTitle className="text-xl font-bold text-red-600">Confirm Unenrollment</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Are you sure you want to unenroll {selectedEnrollment?.employee?.name || selectedEnrollment?.employeeName}{" "}
               from this course?
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
-              <p className="text-red-300 text-sm">
+          <div className="space-y-6 py-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-700 text-sm">
                 <strong>Warning:</strong> This action cannot be undone. The student will lose all progress and will need
                 to re-enroll to continue.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
               <Button
                 onClick={confirmUnenroll}
                 variant="destructive"
@@ -534,12 +551,12 @@ export default function EnrollmentManagement() {
                 disabled={isDeleting}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                { isDeleting ? "Unenrolling..." : "Unenroll Student" }
+                {isDeleting ? "Unenrolling..." : "Unenroll Student"}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsUnenrollModalOpen(false)}
-                className="border-gray-600 text-white bg-gray-700 hover:bg-gray-600 flex-1"
+                className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 flex-1"
               >
                 Cancel
               </Button>

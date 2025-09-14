@@ -186,8 +186,14 @@ model TrainingSession {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   courseId    String   @db.ObjectId
   date        DateTime
+  time        String?
   location    String?
   trainer     String?
+  duration   Int      // in minutes
+  title       String
+  description String?
+  capacity    Int
+  status      String   // Scheduled, Completed, Canceled
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -207,6 +213,7 @@ model TrainingRecord {
   trainingId    String   @db.ObjectId
   attendance    Boolean  @default(false)
   certification String?
+  completed    Boolean  @default(false)
   completedAt   DateTime?
 
   employee Employee        @relation(fields: [employeeId], references: [id])
@@ -220,8 +227,9 @@ model TrainingRecord {
 model SuccessionPlan {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   employeeId String  @db.ObjectId
-  role      String
   readiness Int
+  comments  String?
+  developmentActions String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

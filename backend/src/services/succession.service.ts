@@ -2,9 +2,15 @@ import prisma from '../config/prisma';
 
 export class SuccessionService {
   // Create succession plan
-  async createSuccessionPlanService(data: any) {
+  async createSuccessionPlanService(data: any, userId: any) {
     return await prisma.successionPlan.create({
-      data,
+      data: {
+        employeeId: data.employeeId,
+        readiness: data.assessmentForm.readinessScore,
+        comments: data.assessmentForm.comments,
+        developmentActions: data.assessmentForm.developmentNeeds,
+        createdBy: userId,
+      }
     });
   }
 

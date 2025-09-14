@@ -32,14 +32,11 @@ export const getSuccessionPlanById = async (id: string) => {
 };
 
 // Create a new succession plan
-export const createSuccessionPlan = async (data: {
-  employeeId: string;
-  potentialSuccessorId: string;
-  readinessLevel: string;
-  notes?: string;
-}) => {
+export const createSuccessionPlan = async (data: any) => {
   try {
-    const result = await axios.post(`${urlAPI}/api/v1/succession`, data);
+    const result = await axios.post(`${urlAPI}/api/v1/succession`, data, {
+      withCredentials: true
+    });
     return result.data.plan;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;

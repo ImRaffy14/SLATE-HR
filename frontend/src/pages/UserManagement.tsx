@@ -293,12 +293,12 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header and Add User Button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">User Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
         <Button
-          className="gap-2 bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
+          className="gap-2 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-200 shadow-sm"
           onClick={() => setIsAddUserOpen(true)}
         >
           <UserPlus size={16} />
@@ -307,18 +307,18 @@ const UserManagement = () => {
       </div>
 
       {/* Filters */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-white">Filters</CardTitle>
-          <CardDescription className="text-gray-300">Narrow down user list</CardDescription>
+      <Card className="bg-white border-2 border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-gray-900 text-lg">Filters</CardTitle>
+          <CardDescription className="text-gray-600">Narrow down user list</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search users..."
-                className="pl-9 bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                className="pl-9 bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -328,18 +328,18 @@ const UserManagement = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="justify-start gap-2 border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600"
+                  className="justify-start gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
                 >
                   <Filter size={16} />
                   Role: {selectedRole}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-gray-800 border-gray-600">
+              <DropdownMenuContent className="bg-white border-2 border-gray-200 shadow-lg">
                 {roles.map((role) => (
                   <DropdownMenuItem
                     key={role}
                     onClick={() => setSelectedRole(role)}
-                    className="text-white hover:bg-gray-700"
+                    className="text-gray-900 hover:bg-gray-50"
                   >
                     {role}
                   </DropdownMenuItem>
@@ -349,7 +349,7 @@ const UserManagement = () => {
 
             <Button
               variant="outline"
-              className="gap-2 border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600"
+              className="gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
               onClick={() => {
                 setSearchTerm("")
                 setSelectedRole("All")
@@ -362,36 +362,38 @@ const UserManagement = () => {
       </Card>
 
       {/* Users Table */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
+      <Card className="bg-white border-2 border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-white">Users</CardTitle>
-              <CardDescription className="text-gray-300">{totalItems} users found</CardDescription>
+              <CardTitle className="text-gray-900 text-lg">Users</CardTitle>
+              <CardDescription className="text-gray-600">{totalItems} users found</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-gray-600">
-                <TableHead className="text-gray-200 font-semibold">User</TableHead>
-                <TableHead className="text-gray-200 font-semibold">Role</TableHead>
-                <TableHead className="text-right text-gray-200 font-semibold">Actions</TableHead>
+              <TableRow className="border-gray-200">
+                <TableHead className="text-gray-700 font-semibold">User</TableHead>
+                <TableHead className="text-gray-700 font-semibold">Role</TableHead>
+                <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {currentUsers.map((user) => (
-                <TableRow key={user.id} className="border-gray-700 hover:bg-gray-700">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
+                <TableRow key={user.id} className="border-gray-200 hover:bg-gray-50">
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12 ring-2 ring-gray-100">
                         <AvatarImage src={user.image.imageUrl || "/placeholder.svg"} alt="avatar" />
-                        <AvatarFallback className="bg-gray-600 text-white">{user.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-gray-100 text-gray-700 font-medium">
+                          {user.name.charAt(0)}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-white">{user.name}</div>
-                        <div className="text-sm text-gray-300">{user.email}</div>
+                        <div className="font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm text-gray-600">{user.email}</div>
                       </div>
                     </div>
                   </TableCell>
@@ -400,9 +402,9 @@ const UserManagement = () => {
                       variant={user.role === "ADMIN" ? "default" : user.role === "USER" ? "secondary" : "outline"}
                       className={
                         user.role === "ADMIN"
-                          ? "bg-gray-600 text-white"
+                          ? "bg-gray-900 text-white hover:bg-gray-800"
                           : user.role === "USER"
-                            ? "bg-gray-700 text-gray-200"
+                            ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             : ""
                       }
                     >
@@ -415,35 +417,35 @@ const UserManagement = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-gray-300 hover:text-white hover:bg-gray-700"
+                          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                         >
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
+                      <DropdownMenuContent align="end" className="bg-white border-2 border-gray-200 shadow-lg">
                         <DropdownMenuItem
-                          className="gap-2 text-white hover:bg-gray-700"
+                          className="gap-2 text-gray-900 hover:bg-gray-50"
                           onClick={() => openViewModal(user)}
                         >
                           <Eye size={16} />
                           View
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="gap-2 text-white hover:bg-gray-700"
+                          className="gap-2 text-gray-900 hover:bg-gray-50"
                           onClick={() => openEditModal(user)}
                         >
                           <Edit size={16} />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="gap-2 text-white hover:bg-gray-700"
+                          className="gap-2 text-gray-900 hover:bg-gray-50"
                           onClick={() => openChangePasswordModal(user)}
                         >
                           <Key size={16} />
                           Change Password
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="gap-2 text-red-400 hover:bg-gray-700"
+                          className="gap-2 text-red-600 hover:bg-red-50"
                           onClick={() => openConfirmationModal(user)}
                         >
                           <Trash2 size={16} />
@@ -457,8 +459,8 @@ const UserManagement = () => {
             </TableBody>
           </Table>
         </CardContent>
-        <CardFooter className="flex justify-between border-t-2 border-gray-600">
-          <div className="text-sm text-gray-300">
+        <CardFooter className="flex justify-between border-t-2 border-gray-200 pt-6">
+          <div className="text-sm text-gray-600">
             Showing {Math.min((currentPage - 1) * usersPerPage + 1, totalItems)} to{" "}
             {Math.min(currentPage * usersPerPage, totalItems)} of {totalItems} users
           </div>
@@ -480,10 +482,10 @@ const UserManagement = () => {
           setIsAddUserOpen(open)
         }}
       >
-        <DialogContent className="sm:max-w-[600px] bg-gray-800 border-2 border-gray-600 shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-white">Add New User</DialogTitle>
-            <DialogDescription className="text-gray-300">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white border-2 border-gray-200 shadow-xl">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-gray-900 text-xl">Add New User</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Fill in the details below to create a new user account.
             </DialogDescription>
           </DialogHeader>
@@ -494,27 +496,27 @@ const UserManagement = () => {
               handleAddUser()
             }}
           >
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-4">
               {/* Avatar Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="avatar" className="text-gray-200">
+              <div className="space-y-3">
+                <Label htmlFor="avatar" className="text-gray-700 font-medium">
                   Profile Picture
                 </Label>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-20 w-20 ring-2 ring-gray-200">
                     {croppedImage ? (
                       <AvatarImage src={croppedImage || "/placeholder.svg"} />
                     ) : (
-                      <AvatarFallback className="bg-gray-600 text-white">
-                        <ImageIcon size={24} className="text-gray-300" />
+                      <AvatarFallback className="bg-gray-100 text-gray-600">
+                        <ImageIcon size={28} className="text-gray-400" />
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Input id="avatar" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                     <Label
                       htmlFor="avatar"
-                      className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-gray-600 rounded-md text-sm text-gray-200 hover:bg-gray-700"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <ImageIcon size={16} />
                       {croppedImage ? "Change" : "Upload"} Image
@@ -525,7 +527,7 @@ const UserManagement = () => {
                         size="sm"
                         onClick={() => setCroppedImage(null)}
                         type="button"
-                        className="text-gray-300 hover:text-white"
+                        className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                       >
                         <X size={16} className="mr-1" />
                         Remove
@@ -537,9 +539,9 @@ const UserManagement = () => {
 
               {/* Image Cropper */}
               {imageSrc && !croppedImage && (
-                <div className="space-y-2">
-                  <Label>Crop Image</Label>
-                  <div className="h-64">
+                <div className="space-y-3">
+                  <Label className="text-gray-700 font-medium">Crop Image</Label>
+                  <div className="h-64 border-2 border-gray-200 rounded-lg overflow-hidden">
                     <Cropper
                       src={imageSrc}
                       style={{ height: 256, width: "100%" }}
@@ -548,7 +550,7 @@ const UserManagement = () => {
                       ref={cropperRef}
                     />
                   </div>
-                  <Button onClick={getCropData} className="mt-2" type="button">
+                  <Button onClick={getCropData} className="mt-3 bg-gray-900 hover:bg-gray-800 text-white" type="button">
                     Crop Image
                   </Button>
                 </div>
@@ -556,8 +558,8 @@ const UserManagement = () => {
 
               {/* Name */}
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-200 font-medium">
-                  Full Name <span className="text-red-400">*</span>
+                <Label htmlFor="name" className="text-gray-700 font-medium">
+                  Full Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -566,14 +568,14 @@ const UserManagement = () => {
                   placeholder="John Doe"
                   required
                   minLength={2}
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-200 font-medium">
-                  Email <span className="text-red-400">*</span>
+                <Label htmlFor="email" className="text-gray-700 font-medium">
+                  Email <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="email"
@@ -583,14 +585,14 @@ const UserManagement = () => {
                   placeholder="user@example.com"
                   required
                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$"
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-200 font-medium">
-                  Password <span className="text-red-400">*</span>
+                <Label htmlFor="password" className="text-gray-700 font-medium">
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="password"
@@ -600,30 +602,28 @@ const UserManagement = () => {
                   placeholder="••••••••"
                   required
                   minLength={8}
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               {/* Role */}
               <div className="space-y-2">
-                <Label htmlFor="role" className="text-gray-200 font-medium">
-                  Role <span className="text-red-400">*</span>
+                <Label htmlFor="role" className="text-gray-700 font-medium">
+                  Role <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={newUser.role}
                   onValueChange={(value) => setNewUser({ ...newUser, role: value })}
                   required
                 >
-                  {/* Updated select trigger colors */}
-                  <SelectTrigger id="role" className="w-[180px] bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectTrigger id="role" className="w-[180px] bg-white border-2 border-gray-200 text-gray-900">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  {/* Updated select content colors */}
-                  <SelectContent className="bg-gray-800 border-2 border-gray-600">
-                    <SelectItem value="ADMIN" className="text-white hover:bg-gray-700">
+                  <SelectContent className="bg-white border-2 border-gray-200 shadow-lg">
+                    <SelectItem value="ADMIN" className="text-gray-900 hover:bg-gray-50">
                       Admin
                     </SelectItem>
-                    <SelectItem value="USER" className="text-white hover:bg-gray-700">
+                    <SelectItem value="USER" className="text-gray-900 hover:bg-gray-50">
                       User
                     </SelectItem>
                   </SelectContent>
@@ -631,7 +631,7 @@ const UserManagement = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -639,11 +639,11 @@ const UserManagement = () => {
                   resetForm()
                 }}
                 type="button"
-                className="border-2 border-gray-600 text-gray-200 hover:bg-gray-700"
+                className="border-2 border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </Button>
-              <Button disabled={isCreating} type="submit" className="bg-gray-600 hover:bg-gray-500 text-white">
+              <Button disabled={isCreating} type="submit" className="bg-gray-900 hover:bg-gray-800 text-white">
                 {isCreating && <Loader2 className="animate-spin mr-2" />}
                 Add User
               </Button>
@@ -669,10 +669,10 @@ const UserManagement = () => {
           setIsEditUserOpen(open)
         }}
       >
-        <DialogContent className="sm:max-w-[600px] bg-gray-800 border-2 border-gray-600 shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-white">Edit User</DialogTitle>
-            <DialogDescription className="text-gray-300">Update the user details below.</DialogDescription>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white border-2 border-gray-200 shadow-xl">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-gray-900 text-xl">Edit User</DialogTitle>
+            <DialogDescription className="text-gray-600">Update the user details below.</DialogDescription>
           </DialogHeader>
 
           <form
@@ -681,25 +681,25 @@ const UserManagement = () => {
               handleEditUser()
             }}
           >
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-4">
               {/* Avatar Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-avatar" className="text-gray-200">
+              <div className="space-y-3">
+                <Label htmlFor="edit-avatar" className="text-gray-700 font-medium">
                   Profile Picture
                 </Label>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-20 w-20 ring-2 ring-gray-200">
                     {croppedImage ? (
                       <AvatarImage src={croppedImage || "/placeholder.svg"} />
                     ) : selectedUser?.image?.imageUrl ? (
                       <AvatarImage src={selectedUser.image.imageUrl || "/placeholder.svg"} />
                     ) : (
-                      <AvatarFallback className="bg-gray-600 text-white">
-                        <ImageIcon size={24} className="text-gray-300" />
+                      <AvatarFallback className="bg-gray-100 text-gray-600">
+                        <ImageIcon size={28} className="text-gray-400" />
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Input
                       id="edit-avatar"
                       type="file"
@@ -709,7 +709,7 @@ const UserManagement = () => {
                     />
                     <Label
                       htmlFor="edit-avatar"
-                      className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-gray-600 rounded-md text-sm text-gray-200 hover:bg-gray-700"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <ImageIcon size={16} />
                       {croppedImage ? "Change" : "Upload"} Image
@@ -722,7 +722,7 @@ const UserManagement = () => {
                           setCroppedImage(null)
                         }}
                         type="button"
-                        className="text-gray-300 hover:text-white"
+                        className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                       >
                         <X size={16} className="mr-1" />
                         Remove
@@ -734,9 +734,9 @@ const UserManagement = () => {
 
               {/* Image Cropper */}
               {imageSrc && !croppedImage && (
-                <div className="space-y-2">
-                  <Label>Crop Image</Label>
-                  <div className="h-64">
+                <div className="space-y-3">
+                  <Label className="text-gray-700 font-medium">Crop Image</Label>
+                  <div className="h-64 border-2 border-gray-200 rounded-lg overflow-hidden">
                     <Cropper
                       src={imageSrc}
                       style={{ height: 256, width: "100%" }}
@@ -745,7 +745,7 @@ const UserManagement = () => {
                       ref={cropperRef}
                     />
                   </div>
-                  <Button onClick={getCropData} className="mt-2" type="button">
+                  <Button onClick={getCropData} className="mt-3 bg-gray-900 hover:bg-gray-800 text-white" type="button">
                     Crop Image
                   </Button>
                 </div>
@@ -753,8 +753,8 @@ const UserManagement = () => {
 
               {/* Name */}
               <div className="space-y-2">
-                <Label htmlFor="edit-name" className="text-gray-200 font-medium">
-                  Full Name <span className="text-red-400">*</span>
+                <Label htmlFor="edit-name" className="text-gray-700 font-medium">
+                  Full Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="edit-name"
@@ -763,14 +763,14 @@ const UserManagement = () => {
                   placeholder="John Doe"
                   required
                   minLength={2}
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="edit-email" className="text-gray-200 font-medium">
-                  Email <span className="text-red-400">*</span>
+                <Label htmlFor="edit-email" className="text-gray-700 font-medium">
+                  Email <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="edit-email"
@@ -780,28 +780,28 @@ const UserManagement = () => {
                   placeholder="user@example.com"
                   required
                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$"
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               {/* Role */}
               <div className="space-y-2">
-                <Label htmlFor="edit-role" className="text-gray-200 font-medium">
-                  Role <span className="text-red-400">*</span>
+                <Label htmlFor="edit-role" className="text-gray-700 font-medium">
+                  Role <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={editUser.role}
                   onValueChange={(value) => setEditUser({ ...editUser, role: value })}
                   required
                 >
-                  <SelectTrigger id="edit-role" className="w-[180px] bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectTrigger id="edit-role" className="w-[180px] bg-white border-2 border-gray-200 text-gray-900">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-2 border-gray-600">
-                    <SelectItem value="ADMIN" className="text-white hover:bg-gray-700">
+                  <SelectContent className="bg-white border-2 border-gray-200 shadow-lg">
+                    <SelectItem value="ADMIN" className="text-gray-900 hover:bg-gray-50">
                       Admin
                     </SelectItem>
-                    <SelectItem value="USER" className="text-white hover:bg-gray-700">
+                    <SelectItem value="USER" className="text-gray-900 hover:bg-gray-50">
                       User
                     </SelectItem>
                   </SelectContent>
@@ -809,7 +809,7 @@ const UserManagement = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -817,11 +817,11 @@ const UserManagement = () => {
                   resetForm()
                 }}
                 type="button"
-                className="border-2 border-gray-600 text-gray-200 hover:bg-gray-700"
+                className="border-2 border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </Button>
-              <Button disabled={isUpdating} type="submit" className="bg-gray-600 hover:bg-gray-500 text-white">
+              <Button disabled={isUpdating} type="submit" className="bg-gray-900 hover:bg-gray-800 text-white">
                 {isUpdating && <Loader2 className="animate-spin mr-2" />}
                 Save Changes
               </Button>
@@ -844,30 +844,32 @@ const UserManagement = () => {
           setIsViewUserOpen(open)
         }}
       >
-        <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-white">User Details</DialogTitle>
-            <DialogDescription className="text-gray-300">View detailed information about this user.</DialogDescription>
+        <DialogContent className="sm:max-w-[500px] bg-white border-2 border-gray-200 shadow-xl">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-gray-900 text-xl">User Details</DialogTitle>
+            <DialogDescription className="text-gray-600">View detailed information about this user.</DialogDescription>
           </DialogHeader>
 
           {selectedUser && (
-            <div className="space-y-4">
-              <div className="flex flex-col items-center gap-4">
-                <Avatar className="h-24 w-24">
+            <div className="space-y-6">
+              <div className="flex flex-col items-center gap-6">
+                <Avatar className="h-28 w-28 ring-4 ring-gray-100">
                   <AvatarImage src={selectedUser.image.imageUrl || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-gray-600 text-white">{selectedUser.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="bg-gray-100 text-gray-700 text-xl font-medium">
+                    {selectedUser.name.charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white">{selectedUser.name}</h3>
-                  <p className="text-sm text-gray-300">{selectedUser.email}</p>
+                  <h3 className="text-xl font-semibold text-gray-900">{selectedUser.name}</h3>
+                  <p className="text-gray-600 mt-1">{selectedUser.email}</p>
                 </div>
               </div>
 
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-200 font-medium">Role</Label>
-                    <p>
+                    <Label className="text-gray-700 font-medium">Role</Label>
+                    <div className="mt-2">
                       <Badge
                         variant={
                           selectedUser.role === "ADMIN"
@@ -878,31 +880,31 @@ const UserManagement = () => {
                         }
                         className={
                           selectedUser.role === "ADMIN"
-                            ? "bg-gray-600 text-white"
+                            ? "bg-gray-900 text-white"
                             : selectedUser.role === "USER"
-                              ? "bg-gray-700 text-gray-200"
+                              ? "bg-gray-100 text-gray-700"
                               : ""
                         }
                       >
                         {selectedUser.role}
                       </Badge>
-                    </p>
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-gray-200 font-medium">Account Created</Label>
-                  <p className="text-white">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                  <Label className="text-gray-700 font-medium">Account Created</Label>
+                  <p className="text-gray-900 mt-2">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-6 border-t border-gray-200">
             <Button
               variant="outline"
               onClick={() => setIsViewUserOpen(false)}
-              className="border-2 border-gray-600 text-gray-200 hover:bg-gray-700"
+              className="border-2 border-gray-200 text-gray-700 hover:bg-gray-50"
             >
               Close
             </Button>
@@ -927,10 +929,10 @@ const UserManagement = () => {
           setIsChangePasswordOpen(open)
         }}
       >
-        <DialogContent className="sm:max-w-[500px] bg-gray-800 border-2 border-gray-600 shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-white">Change Password</DialogTitle>
-            <DialogDescription className="text-gray-300">
+        <DialogContent className="sm:max-w-[500px] bg-white border-2 border-gray-200 shadow-xl">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-gray-900 text-xl">Change Password</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Change the password for {selectedUser?.name}.
             </DialogDescription>
           </DialogHeader>
@@ -941,10 +943,10 @@ const UserManagement = () => {
               handleChangePassword()
             }}
           >
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-gray-200 font-medium">
-                  New Password <span className="text-red-400">*</span>
+                <Label htmlFor="new-password" className="text-gray-700 font-medium">
+                  New Password <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="new-password"
@@ -959,13 +961,13 @@ const UserManagement = () => {
                   placeholder="••••••••"
                   required
                   minLength={8}
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-gray-200 font-medium">
-                  Confirm New Password <span className="text-red-400">*</span>
+                <Label htmlFor="confirm-password" className="text-gray-700 font-medium">
+                  Confirm New Password <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="confirm-password"
@@ -980,20 +982,20 @@ const UserManagement = () => {
                   placeholder="••••••••"
                   required
                   minLength={8}
-                  className="bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white placeholder:text-gray-400"
+                  className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                 <Button
                   variant="outline"
                   onClick={() => setIsChangePasswordOpen(false)}
                   type="button"
-                  className="border-2 border-gray-600 text-gray-200 hover:bg-gray-700"
+                  className="border-2 border-gray-200 text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </Button>
-                <Button disabled={isChangingPassword} className="bg-gray-600 hover:bg-gray-500 text-white">
+                <Button disabled={isChangingPassword} className="bg-gray-900 hover:bg-gray-800 text-white">
                   {isChangingPassword && <Loader2 className="animate-spin mr-2" />}
                   Change Password
                 </Button>

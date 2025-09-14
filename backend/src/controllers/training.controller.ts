@@ -7,7 +7,8 @@ export class TrainingController {
 
   // Create a training session
   createTrainingSession = asyncHandler(async (req: Request, res: Response) => {
-    const session = await this.trainingService.createTrainingSessionService(req.body);
+    const userId = req.user?.userId
+    const session = await this.trainingService.createTrainingSessionService(req.body, userId);
     res.status(201).json({
       status: "success",
       message: "Training session created successfully",
@@ -36,8 +37,9 @@ export class TrainingController {
 
   // Update training session
   updateTrainingSession = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user?.userId
     const { id } = req.params;
-    const updated = await this.trainingService.updateTrainingSessionService(id, req.body);
+    const updated = await this.trainingService.updateTrainingSessionService(id, req.body, userId);
     res.status(200).json({
       status: "success",
       message: "Training session updated successfully",

@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -21,11 +20,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  createCourse,
-  getCourses,
-  updateCourse
-} from "@/api/learning"
+import { createCourse, getCourses, updateCourse } from "@/api/learning"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { toast } from "react-hot-toast"
 
@@ -185,104 +180,107 @@ export default function LearningManagement() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "Active":
-        return "bg-green-600 text-white"
+        return "bg-green-100 text-green-800 border-green-200"
       case "Draft":
-        return "bg-yellow-600 text-white"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "Archived":
-        return "bg-gray-600 text-white"
+        return "bg-gray-100 text-gray-800 border-gray-200"
       default:
-        return "bg-gray-600 text-white"
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
   const getTypeBadgeColor = (type: string) => {
     switch (type) {
       case "Online":
-        return "bg-blue-600 text-white"
+        return "bg-blue-100 text-blue-800 border-blue-200"
       case "Offline":
-        return "bg-purple-600 text-white"
+        return "bg-purple-100 text-purple-800 border-purple-200"
       case "Hybrid":
-        return "bg-orange-600 text-white"
+        return "bg-orange-100 text-orange-800 border-orange-200"
       default:
-        return "bg-gray-600 text-white"
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Learning Management</h2>
-        <Button
-          className="gap-2 bg-gray-800 hover:bg-gray-900 text-white border border-gray-700"
-          onClick={handleCreateCourse}
-        >
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className="text-3xl font-bold text-gray-900">Learning Management</h2>
+        <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm" onClick={handleCreateCourse}>
           <Plus size={16} />
           Create Course
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-8 w-8 text-blue-400" />
-              <div>
-                <p className="text-sm text-gray-300">Total Courses</p>
-                <p className="text-2xl font-bold text-white">24</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <BookOpen className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Total Courses</p>
+                <p className="text-2xl font-bold text-gray-900">24</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-green-400" />
-              <div>
-                <p className="text-sm text-gray-300">Total Enrollments</p>
-                <p className="text-2xl font-bold text-white">156</p>
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Total Enrollments</p>
+                <p className="text-2xl font-bold text-gray-900">156</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Award className="h-8 w-8 text-yellow-400" />
-              <div>
-                <p className="text-sm text-gray-300">Completions</p>
-                <p className="text-2xl font-bold text-white">128</p>
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Award className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Completions</p>
+                <p className="text-2xl font-bold text-gray-900">128</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-purple-400" />
-              <div>
-                <p className="text-sm text-gray-300">Avg. Rating</p>
-                <p className="text-2xl font-bold text-white">4.6/5</p>
+        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Clock className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Avg. Rating</p>
+                <p className="text-2xl font-bold text-gray-900">4.6/5</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-white">Filters</CardTitle>
-          <CardDescription className="text-gray-300">Filter courses and training materials</CardDescription>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-gray-900">Filters</CardTitle>
+          <CardDescription className="text-gray-600">Filter courses and training materials</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search courses..."
-                className="pl-9 bg-gray-700 border-2 border-gray-600 focus:border-gray-500 text-white"
+                className="pl-9 bg-white border border-gray-300 focus:border-blue-500 text-gray-900"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -292,18 +290,18 @@ export default function LearningManagement() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="justify-start gap-2 border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600"
+                  className="justify-start gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <Filter size={16} />
                   Type: {selectedType}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-gray-800 border-gray-600">
+              <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg">
                 {courseTypes.map((type) => (
                   <DropdownMenuItem
                     key={type}
                     onClick={() => setSelectedType(type)}
-                    className="text-white hover:bg-gray-700"
+                    className="text-gray-900 hover:bg-gray-50"
                   >
                     {type}
                   </DropdownMenuItem>
@@ -315,18 +313,18 @@ export default function LearningManagement() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="justify-start gap-2 border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600"
+                  className="justify-start gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <Filter size={16} />
                   Category: {selectedCategory}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-gray-800 border-gray-600">
+              <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg">
                 {categories.map((category) => (
                   <DropdownMenuItem
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className="text-white hover:bg-gray-700"
+                    className="text-gray-900 hover:bg-gray-50"
                   >
                     {category}
                   </DropdownMenuItem>
@@ -336,7 +334,7 @@ export default function LearningManagement() {
 
             <Button
               variant="outline"
-              className="gap-2 border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600"
+              className="gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
               onClick={() => {
                 setSearchTerm("")
                 setSelectedType("All")
@@ -349,155 +347,161 @@ export default function LearningManagement() {
         </CardContent>
       </Card>
 
-      {/* Courses Table */}
-      <Card className="bg-gray-800 border-2 border-gray-600 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-white">Course Library</CardTitle>
-          <CardDescription className="text-gray-300">{filteredCourses.length} courses found</CardDescription>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-gray-900">Course Library</CardTitle>
+          <CardDescription className="text-gray-600">{filteredCourses.length} courses found</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-600">
-                <TableHead className="text-gray-300 font-semibold">Course</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Duration</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Enrollment</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Completion Rate</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Rating</TableHead>
-                <TableHead className="text-right text-gray-300 font-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCourses.map((course: any) => (
-                <TableRow key={course.id} className="border-gray-600 hover:bg-gray-700">
-                  <TableCell>
-                    <div>
-                      <div className="font-medium text-white">{course.title}</div>
-                      <div className="text-sm text-gray-400">{course.category}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-white">{course.duration} minutes</TableCell>
-                  <TableCell className="text-white">{course.enrollments.length} enrolled</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-300">
-                          {(course.enrollments.filter((e: any) => e.status === "COMPLETED").length)}/{course.enrollments.length}
-                        </span>
-                       <span className="text-gray-400">
-                          {course.enrollments.length > 0
-                            ? ((course.enrollments.filter((e: any) => e.status === "COMPLETED").length / course.enrollments.length) * 100).toFixed(0)
-                            : 0}% 
-                        </span>
-
-                      </div>
-                      <Progress
-                        value={
-                          (course.enrollments.filter((e: any) => e.status === "COMPLETED").length /
-                            course.enrollments.length) *
-                          100
-                        }
-                        className="h-2"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-white">⭐ {course.rating || 0}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700"
-                        >
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
-                        <DropdownMenuItem
-                          className="gap-2 text-white hover:bg-gray-700"
-                          onClick={() => handleViewCourse(course)}
-                        >
-                          <Eye size={16} />
-                          View Course
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-white hover:bg-gray-700"
-                          onClick={() => handleEditCourse(course)}
-                        >
-                          <Edit size={16} />
-                          Edit Course
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-white hover:bg-gray-700"
-                          onClick={() => handleManageEnrollments(course)}
-                        >
-                          <Users size={16} />
-                          Manage Enrollments
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-200">
+                  <TableHead className="text-gray-700 font-semibold">Course</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Duration</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Enrollment</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Completion Rate</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Rating</TableHead>
+                  <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCourses.map((course: any) => (
+                  <TableRow key={course.id} className="border-gray-200 hover:bg-gray-50">
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium text-gray-900">{course.title}</div>
+                        <div className="text-sm text-gray-500">{course.category}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-900">{course.duration} minutes</TableCell>
+                    <TableCell className="text-gray-900">{course.enrollments.length} enrolled</TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">
+                            {course.enrollments.filter((e: any) => e.status === "COMPLETED").length}/
+                            {course.enrollments.length}
+                          </span>
+                          <span className="text-gray-500">
+                            {course.enrollments.length > 0
+                              ? (
+                                  (course.enrollments.filter((e: any) => e.status === "COMPLETED").length /
+                                    course.enrollments.length) *
+                                  100
+                                ).toFixed(0)
+                              : 0}
+                            %
+                          </span>
+                        </div>
+                        <Progress
+                          value={
+                            (course.enrollments.filter((e: any) => e.status === "COMPLETED").length /
+                              course.enrollments.length) *
+                            100
+                          }
+                          className="h-2"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-900">⭐ {course.rating || 0}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                          >
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
+                          <DropdownMenuItem
+                            className="gap-2 text-gray-900 hover:bg-gray-50"
+                            onClick={() => handleViewCourse(course)}
+                          >
+                            <Eye size={16} />
+                            View Course
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-gray-900 hover:bg-gray-50"
+                            onClick={() => handleEditCourse(course)}
+                          >
+                            <Edit size={16} />
+                            Edit Course
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-gray-900 hover:bg-gray-50"
+                            onClick={() => handleManageEnrollments(course)}
+                          >
+                            <Users size={16} />
+                            Manage Enrollments
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="bg-gray-800 border-2 border-gray-600 text-white max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">Create New Course</DialogTitle>
-            <DialogDescription className="text-gray-300">
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-bold text-gray-900">Create New Course</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Add a new training course to the learning management system
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-gray-300">
+                <Label htmlFor="title" className="text-gray-700 font-medium">
                   Course Title
                 </Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="bg-gray-700 border-2 border-gray-600 text-white"
+                  className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                   placeholder="Enter course title"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-gray-300">
+                <Label htmlFor="category" className="text-gray-700 font-medium">
                   Category
                 </Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectTrigger className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="Safety & Compliance" className="text-white hover:bg-gray-700">
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                    <SelectItem value="Safety & Compliance" className="text-gray-900 hover:bg-gray-50">
                       Safety & Compliance
                     </SelectItem>
-                    <SelectItem value="Operations" className="text-white hover:bg-gray-700">
+                    <SelectItem value="Operations" className="text-gray-900 hover:bg-gray-50">
                       Operations
                     </SelectItem>
-                    <SelectItem value="Technology" className="text-white hover:bg-gray-700">
+                    <SelectItem value="Technology" className="text-gray-900 hover:bg-gray-50">
                       Technology
                     </SelectItem>
-                    <SelectItem value="Leadership" className="text-white hover:bg-gray-700">
+                    <SelectItem value="Leadership" className="text-gray-900 hover:bg-gray-50">
                       Leadership
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration" className="text-gray-300">
+                <Label htmlFor="duration" className="text-gray-700 font-medium">
                   Duration
                 </Label>
                 <Input
@@ -505,47 +509,51 @@ export default function LearningManagement() {
                   type="number"
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  className="bg-gray-700 border-2 border-gray-600 text-white"
+                  className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                   placeholder="e.g., 40 hours"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-300">
+              <Label htmlFor="description" className="text-gray-700 font-medium">
                 Description
               </Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
+                className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                 placeholder="Enter course description"
                 rows={3}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="materials" className="text-gray-300">
+              <Label htmlFor="materials" className="text-gray-700 font-medium">
                 Course Materials
               </Label>
               <Textarea
                 id="materials"
                 value={formData.materials}
                 onChange={(e) => setFormData({ ...formData, materials: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
+                className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                 placeholder="List course materials and resources"
                 rows={2}
               />
             </div>
           </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2">
             <Button
               variant="outline"
               onClick={() => setIsCreateModalOpen(false)}
-              className="border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600 w-full sm:w-auto"
+              className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto" disabled={isCreatingCourse}>
+            <Button
+              onClick={handleSubmit}
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+              disabled={isCreatingCourse}
+            >
               {isCreatingCourse ? "Creating..." : "Create Course"}
             </Button>
           </DialogFooter>
@@ -553,43 +561,45 @@ export default function LearningManagement() {
       </Dialog>
 
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="bg-gray-800 border-2 border-gray-600 text-white max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">{selectedCourse?.title}</DialogTitle>
-            <DialogDescription className="text-gray-300">Course details and information</DialogDescription>
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-bold text-gray-900">{selectedCourse?.title}</DialogTitle>
+            <DialogDescription className="text-gray-600">Course details and information</DialogDescription>
           </DialogHeader>
           {selectedCourse && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-gray-300 font-semibold">Duration</Label>
-                  <p className="text-white">{selectedCourse.duration}</p>
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <Label className="text-gray-700 font-semibold">Duration</Label>
+                  <p className="text-gray-900">{selectedCourse.duration}</p>
                 </div>
-                <div>
-                  <Label className="text-gray-300 font-semibold">Category</Label>
-                  <p className="text-white">{selectedCourse.category}</p>
+                <div className="space-y-1">
+                  <Label className="text-gray-700 font-semibold">Category</Label>
+                  <p className="text-gray-900">{selectedCourse.category}</p>
                 </div>
               </div>
-              <div>
-                <Label className="text-gray-300 font-semibold">Description</Label>
-                <p className="text-white mt-1">{selectedCourse.description}</p>
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-semibold">Description</Label>
+                <p className="text-gray-900 leading-relaxed">{selectedCourse.description}</p>
               </div>
-              <div>
-                <Label className="text-gray-300 font-semibold">Course Materials</Label>
-                <p className="text-white mt-1">{selectedCourse.courseMaterial}</p>
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-semibold">Course Materials</Label>
+                <p className="text-gray-900 leading-relaxed">{selectedCourse.courseMaterial}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-gray-300 font-semibold">Enrolled</Label>
-                  <p className="text-white">{selectedCourse.enrollments.length} students</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <Label className="text-gray-700 font-semibold">Enrolled</Label>
+                  <p className="text-gray-900">{selectedCourse.enrollments.length} students</p>
                 </div>
-                <div>
-                  <Label className="text-gray-300 font-semibold">Completed</Label>
-                  <p className="text-white">{selectedCourse.enrollments.filter((e: any) => e.status === "COMPLETED").length} students</p>
+                <div className="space-y-1">
+                  <Label className="text-gray-700 font-semibold">Completed</Label>
+                  <p className="text-gray-900">
+                    {selectedCourse.enrollments.filter((e: any) => e.status === "COMPLETED").length} students
+                  </p>
                 </div>
-                <div>
-                  <Label className="text-gray-300 font-semibold">Rating</Label>
-                  <p className="text-white">⭐ {selectedCourse.rating}/5</p>
+                <div className="space-y-1">
+                  <Label className="text-gray-700 font-semibold">Rating</Label>
+                  <p className="text-gray-900">⭐ {selectedCourse.rating}/5</p>
                 </div>
               </div>
             </div>
@@ -598,7 +608,7 @@ export default function LearningManagement() {
             <Button
               variant="outline"
               onClick={() => setIsViewModalOpen(false)}
-              className="border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600 w-full sm:w-auto"
+              className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 w-full sm:w-auto"
             >
               Close
             </Button>
@@ -607,99 +617,103 @@ export default function LearningManagement() {
       </Dialog>
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-gray-800 border-2 border-gray-600 text-white max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">Edit Course</DialogTitle>
-            <DialogDescription className="text-gray-300">Update course information and settings</DialogDescription>
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-bold text-gray-900">Edit Course</DialogTitle>
+            <DialogDescription className="text-gray-600">Update course information and settings</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-title" className="text-gray-300">
+                <Label htmlFor="edit-title" className="text-gray-700 font-medium">
                   Course Title
                 </Label>
                 <Input
                   id="edit-title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="bg-gray-700 border-2 border-gray-600 text-white"
+                  className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-category" className="text-gray-300">
+                <Label htmlFor="edit-category" className="text-gray-700 font-medium">
                   Category
                 </Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger className="bg-gray-700 border-2 border-gray-600 text-white">
+                  <SelectTrigger className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="Safety & Compliance" className="text-white hover:bg-gray-700">
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                    <SelectItem value="Safety & Compliance" className="text-gray-900 hover:bg-gray-50">
                       Safety & Compliance
                     </SelectItem>
-                    <SelectItem value="Operations" className="text-white hover:bg-gray-700">
+                    <SelectItem value="Operations" className="text-gray-900 hover:bg-gray-50">
                       Operations
                     </SelectItem>
-                    <SelectItem value="Technology" className="text-white hover:bg-gray-700">
+                    <SelectItem value="Technology" className="text-gray-900 hover:bg-gray-50">
                       Technology
                     </SelectItem>
-                    <SelectItem value="Leadership" className="text-white hover:bg-gray-700">
+                    <SelectItem value="Leadership" className="text-gray-900 hover:bg-gray-50">
                       Leadership
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-duration" className="text-gray-300">
+                <Label htmlFor="edit-duration" className="text-gray-700 font-medium">
                   Duration
                 </Label>
                 <Input
                   id="edit-duration"
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  className="bg-gray-700 border-2 border-gray-600 text-white"
+                  className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description" className="text-gray-300">
+              <Label htmlFor="edit-description" className="text-gray-700 font-medium">
                 Description
               </Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
+                className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                 rows={3}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-materials" className="text-gray-300">
+              <Label htmlFor="edit-materials" className="text-gray-700 font-medium">
                 Course Materials
               </Label>
               <Textarea
                 id="edit-materials"
                 value={formData.materials}
                 onChange={(e) => setFormData({ ...formData, materials: e.target.value })}
-                className="bg-gray-700 border-2 border-gray-600 text-white"
+                className="bg-white border border-gray-300 text-gray-900 focus:border-blue-500"
                 rows={2}
               />
             </div>
           </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2">
             <Button
               variant="outline"
               onClick={() => setIsEditModalOpen(false)}
-              className="border-2 border-gray-600 text-white bg-gray-700 hover:bg-gray-600 w-full sm:w-auto"
+              className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmitUpdate} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto" disabled={isUpdatingCourse}>
+            <Button
+              onClick={handleSubmitUpdate}
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+              disabled={isUpdatingCourse}
+            >
               {isUpdatingCourse ? "Updating..." : "Update Course"}
             </Button>
           </DialogFooter>
