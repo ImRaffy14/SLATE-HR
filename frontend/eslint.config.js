@@ -19,9 +19,18 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-explicit-any': 'off',
 
-      // 🚀 Disable unused variable checks
+      // 🚀 Disable unused variable checks in ESLint
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
+    },
+    settings: {
+      // ✅ Tell ESLint that TS should ignore unused vars too
+      'typescript-eslint': {
+        tsconfigRootDir: __dirname,
+        parserOptions: {
+          project: './tsconfig.json',
+        },
+      },
     },
   },
 );
