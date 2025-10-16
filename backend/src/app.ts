@@ -9,7 +9,7 @@ import requestLogger from './middlewares/logger';
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:6001', 'https://slate.imraffydev.com'];
+const allowedOrigins = ['http://localhost:6001', 'https://slate.imraffydev.com', 'https://hr2.slatefreight-ph.com'];
 
 app.use(cors({
     origin: allowedOrigins,
