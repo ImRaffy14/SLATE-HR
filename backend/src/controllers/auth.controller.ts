@@ -21,7 +21,8 @@ export class AuthController {
       .cookie('accessToken', userLoggedIn.token, {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
+        sameSite: 'lax', // now allowed since same domain
+        domain: '.slatefreight-ph.com', // 👈 important
         maxAge: 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -47,7 +48,8 @@ export class AuthController {
       .clearCookie('accessToken', {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
+        sameSite: 'lax', // now allowed since same domain
+        domain: '.slatefreight-ph.com', // 👈 important
       })
       .status(200)
       .json({
