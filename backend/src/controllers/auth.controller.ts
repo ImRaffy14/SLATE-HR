@@ -19,9 +19,9 @@ export class AuthController {
     const userLoggedIn = await this.authService.loginService(req.body);
     res
       .cookie('accessToken', userLoggedIn.token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax', // now allowed since same domain
+        httpOnly: false,
+        secure: false,
+        sameSite: 'none', // now allowed since same domain
         maxAge: 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -45,9 +45,9 @@ export class AuthController {
   logoutUser = asyncHandler(async (req: Request, res: Response) => {
     res
       .clearCookie('accessToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax', // now allowed since same domain
+        httpOnly: false,
+        secure: false,
+        sameSite: 'none', // now allowed since same domain
       })
       .status(200)
       .json({
