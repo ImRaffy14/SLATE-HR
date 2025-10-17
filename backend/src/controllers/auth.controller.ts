@@ -22,7 +22,6 @@ export class AuthController {
         httpOnly: true,
         secure: true,
         sameSite: 'lax', // now allowed since same domain
-        domain: '.slatefreight-ph.com', // 👈 important
         maxAge: 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -49,7 +48,6 @@ export class AuthController {
         httpOnly: true,
         secure: true,
         sameSite: 'lax', // now allowed since same domain
-        domain: '.slatefreight-ph.com', // 👈 important
       })
       .status(200)
       .json({
