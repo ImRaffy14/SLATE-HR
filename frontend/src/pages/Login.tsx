@@ -5,6 +5,7 @@ import { login } from '@/api/auth';
 import toast from 'react-hot-toast';
 import { AxiosError } from "axios"
 import { useNavigate } from 'react-router-dom';
+import LOGO from '@/assets/slate-logo.png';
 
 
 export default function AdminLoginPage() {
@@ -46,8 +47,8 @@ export default function AdminLoginPage() {
             <div className="w-full max-w-md rounded-lg bg-gray-900 p-6 shadow-lg md:p-8">
                 {/* Header */}
                 <div className="flex flex-col items-center justify-center space-y-2 mb-6">
-                <div className="rounded-full bg-gray-800 p-3">
-                    <Shield className="h-8 w-8 text-gray-300" />
+                <div className="rounded-full bg-gray-800 p-1">
+                    <img src={LOGO} alt="Logo" className="h-15 w-15 rounded-full" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-100">Login Admin</h1>
                 <div className="flex items-center">

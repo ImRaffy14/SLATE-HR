@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { logout } from "@/api/auth"
 import toast from "react-hot-toast"
 import { useAuth } from "@/context/authContext"
+import LOGO from '@/assets/slate-logo.png';
 
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
@@ -46,7 +47,12 @@ function Sidebar() {
     >
       {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-slate-700">
-        {!collapsed && <h1 className="text-lg font-semibold text-white">Admin Panel</h1>}
+        {!collapsed && 
+          <div className="rounded-full bg-gray-800 p-1 flex justify-center items-center">
+            <img src={LOGO} alt="Logo" className="h-11 w-11 rounded-full" />
+            <h1 className="ml-3 text-lg font-bold text-gray-100 inline-block align-middle">Admin Panel</h1>
+          </div>
+        }
         <Button
           variant="ghost"
           size="icon"
