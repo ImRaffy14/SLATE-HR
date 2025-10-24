@@ -204,72 +204,20 @@ export default function LearningManagement() {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-3xl font-bold text-gray-900">Learning Management</h2>
-        <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm" onClick={handleCreateCourse}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Learning Management</h2>
+          <p className="text-gray-600">Manage courses and Employee Enrollments</p>
+        </div>
+        <Button className="gap-2 bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 shadow-sm" onClick={handleCreateCourse}>
           <Plus size={16} />
           Create Course
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <BookOpen className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                <p className="text-2xl font-bold text-gray-900">24</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Total Enrollments</p>
-                <p className="text-2xl font-bold text-gray-900">156</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Award className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Completions</p>
-                <p className="text-2xl font-bold text-gray-900">128</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Clock className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Avg. Rating</p>
-                <p className="text-2xl font-bold text-gray-900">4.6/5</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-white border border-gray-200 shadow-sm">
+      <Card className="bg-white border border-gray-200 shadow-sm mb-5">
         <CardHeader className="pb-4">
           <CardTitle className="text-gray-900">Filters</CardTitle>
           <CardDescription className="text-gray-600">Filter courses and training materials</CardDescription>

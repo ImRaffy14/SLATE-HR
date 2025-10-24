@@ -264,9 +264,9 @@ export default function SuccessionPlanning() {
   }
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+    <div className="">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <h2 className="text-2xl font-bold text-gray-900">Succession Planning</h2>
         <Button
           className="gap-2 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-200 shadow-sm w-full sm:w-auto"
@@ -277,64 +277,8 @@ export default function SuccessionPlanning() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100">
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Total Candidates</p>
-                <p className="text-3xl font-bold text-gray-900">24</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-50 rounded-2xl border border-green-100">
-                <Star className="h-8 w-8 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">High Potential</p>
-                <p className="text-3xl font-bold text-gray-900">12</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-50 rounded-2xl border border-yellow-100">
-                <Target className="h-8 w-8 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Ready for Promotion</p>
-                <p className="text-3xl font-bold text-gray-900">8</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-50 rounded-2xl border border-purple-100">
-                <TrendingUp className="h-8 w-8 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Avg. Readiness</p>
-                <p className="text-3xl font-bold text-gray-900">79%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <Card className="bg-white border-2 border-gray-200 shadow-lg">
+      <Card className="bg-white border-2 border-gray-200 shadow-lg mb-5">
         <CardHeader className="pb-4">
           <CardTitle className="text-gray-900">Filters</CardTitle>
           <CardDescription className="text-gray-600">Filter succession candidates</CardDescription>

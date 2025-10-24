@@ -57,81 +57,6 @@ import FullPageLoader from "@/components/FullpageLoader"
 import { createSuccessionPlan } from "@/api/succession"
 
 
-const mockEnrollees = [
-  {
-    id: 1,
-    name: "John Doe",
-    department: "Engineering",
-    email: "john@company.com",
-    position: "Senior Developer",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    department: "Marketing",
-    email: "jane@company.com",
-    position: "Marketing Manager",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    department: "Sales",
-    email: "mike@company.com",
-    position: "Sales Representative",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 4,
-    name: "Sarah Wilson",
-    department: "HR",
-    email: "sarah@company.com",
-    position: "HR Specialist",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 5,
-    name: "Tom Brown",
-    department: "Engineering",
-    email: "tom@company.com",
-    position: "Frontend Developer",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 6,
-    name: "Lisa Davis",
-    department: "Marketing",
-    email: "lisa@company.com",
-    position: "Content Creator",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 7,
-    name: "David Lee",
-    department: "IT",
-    email: "david@company.com",
-    position: "System Administrator",
-    selected: false,
-    progress: 0,
-  },
-  {
-    id: 8,
-    name: "Karen White",
-    department: "Finance",
-    email: "karen@company.com",
-    position: "Financial Analyst",
-    selected: false,
-    progress: 0,
-  },
-]
-
 const statuses = ["All", "Scheduled", "In Progress", "Completed", "Cancelled"]
 
 export default function TrainingManagement() {
@@ -542,9 +467,9 @@ export default function TrainingManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-10">
         <h2 className="text-2xl font-bold text-gray-900">Training Management</h2>
         <Button
           className="gap-2 bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 shadow-sm"
@@ -555,56 +480,8 @@ export default function TrainingManagement() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">48</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total Attendees</p>
-                <p className="text-2xl font-bold text-gray-900">342</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-8 w-8 text-yellow-600" />
-              <div>
-                <p className="text-sm text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">36</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-purple-600" />
-              <div>
-                <p className="text-sm text-gray-600">Avg. Attendance</p>
-                <p className="text-2xl font-bold text-gray-900">87%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <Card className="bg-white border border-gray-200 shadow-sm">
+      <Card className="bg-white border border-gray-200 shadow-sm mb-5">
         <CardHeader>
           <CardTitle className="text-gray-900">Filters</CardTitle>
           <CardDescription className="text-gray-600">Filter training sessions</CardDescription>

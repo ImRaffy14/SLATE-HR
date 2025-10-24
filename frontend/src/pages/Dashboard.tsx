@@ -125,7 +125,7 @@ export default function Dashboard() {
   console.log("[v0] Competency distribution data:", competencyDistribution)
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+    <div className="space-y-4">
       {/* Dashboard Overview Header Section */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
@@ -328,61 +328,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent Activities - Updated colors for light theme and improved mobile layout */}
-      <Card className="bg-white border-gray-200 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
-            <Clock size={20} />
-            Recent Activities
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-3 sm:space-y-4">
-            {recentActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div
-                    className={`p-2 rounded-full flex-shrink-0 ${
-                      activity.status === "completed"
-                        ? "bg-green-100 text-green-600"
-                        : activity.status === "pending"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-blue-100 text-blue-600"
-                    }`}
-                  >
-                    {activity.status === "completed" ? (
-                      <CheckCircle size={16} />
-                    ) : activity.status === "pending" ? (
-                      <AlertTriangle size={16} />
-                    ) : (
-                      <Clock size={16} />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-gray-900 font-medium text-sm sm:text-base">{activity.message}</p>
-                    <p className="text-gray-500 text-xs sm:text-sm">{activity.time}</p>
-                  </div>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`self-start sm:self-center flex-shrink-0 ${
-                    activity.status === "completed"
-                      ? "border-green-200 text-green-700 bg-green-50"
-                      : activity.status === "pending"
-                        ? "border-yellow-200 text-yellow-700 bg-yellow-50"
-                        : "border-blue-200 text-blue-700 bg-blue-50"
-                  }`}
-                >
-                  {activity.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

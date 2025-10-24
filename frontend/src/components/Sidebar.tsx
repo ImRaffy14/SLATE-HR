@@ -27,7 +27,14 @@ function Sidebar() {
     { id: "users", path: "/users", icon: <Users size={20} />, label: "User Management" },
   ]
 
-  const menuItems = [...baseMenuItems, ...(isAdmin ? adminMenuItems : [])]
+  const userMenuItems = [
+    { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
+    { id: "learning", path: "/learning", icon: <BookPlus size={20} />, label: "Learning Management" },
+    { id: "training", path: "/training", icon: <RailSymbol size={20} />, label: "Training Management" },
+    { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
+  ]
+
+  const menuItems = [...baseMenuItems, ...(isAdmin ? adminMenuItems : userMenuItems)]
 
   const handleLogout = async () => {
     try {

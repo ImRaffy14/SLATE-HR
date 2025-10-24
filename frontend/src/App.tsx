@@ -87,32 +87,32 @@ function App() {
         { 
           path: "competencies", 
           element: <CompetencyManagement />,
-          roles: ["ADMIN"] 
+          roles: ["ADMIN", "USER"] 
         },
         { 
           path: "learning", 
           element: <LearningManagement />,
-          roles: ["ADMIN"] 
+          roles: ["ADMIN", "USER"] 
         },
         { 
           path: "performance", 
           element: <PerformanceAnalysis />,
-          roles: ["ADMIN"] 
+          roles: ["ADMIN", "USER"] 
         },
         { 
           path: "succession", 
           element: <SuccessionPlanning />,
-          roles: ["ADMIN"] 
+          roles: ["ADMIN", "USER"] 
         },
         { 
           path: "training", 
           element: <TrainingManagement />,
-          roles: ["ADMIN"] 
+          roles: ["ADMIN", "USER"] 
         },
         {
           path: "enrollments/:courseId",
           element: <EnrollmentManagement />,
-          roles: ["ADMIN"]
+          roles: ["ADMIN", "USER"]
         }
       ],
     },

@@ -56,13 +56,6 @@ import { toast } from "react-hot-toast"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import FullPageLoader from "@/components/FullpageLoader"
 
-const skillGapData = [
-  { category: "Safety & Compliance", gaps: 3, total: 8 },
-  { category: "Operations", gaps: 1, total: 6 },
-  { category: "Technical", gaps: 4, total: 7 },
-  { category: "Soft Skills", gaps: 0, total: 4 },
-]
-
 const categories = ["All", "Safety & Compliance", "Operations", "Technical", "Soft Skills"]
 
 export default function CompetencyManagement() {
@@ -314,7 +307,7 @@ export default function CompetencyManagement() {
   return (
     <div className="">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-10">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Competency Management</h2>
           <p className="text-gray-600">Manage competencies and employee assessments</p>
@@ -328,142 +321,8 @@ export default function CompetencyManagement() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-5">
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <Target className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Total Competencies</p>
-                <p className="text-3xl font-bold text-gray-900">{competencies.length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-50 rounded-xl">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Proficient</p>
-                <p className="text-3xl font-bold text-gray-900">{analyticsData.totalProficient}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-50 rounded-xl">
-                <AlertCircle className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Critical Gaps</p>
-                <p className="text-3xl font-bold text-gray-900">{analyticsData.totalCriticalGaps}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-50 rounded-xl">
-                <Truck className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-600">Total Assessed</p>
-                <p className="text-3xl font-bold text-gray-900">{analyticsData.totalAssessed}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-5">
-        {/* Skill Gap Analysis Chart */}
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-yellow-50 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
-              </div>
-              Skill Gap Analysis by Category
-            </CardTitle>
-            <CardDescription className="text-gray-600 text-sm leading-relaxed">
-              Identify areas requiring immediate training attention
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ChartContainer
-              config={{
-                gaps: { label: "Skill Gaps", color: "#EF4444" },
-                total: { label: "Total Skills", color: "#9CA3AF" },
-              }}
-              className="h-[320px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={analyticsData.skillGapsByCategory || skillGapData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="category" stroke="#6B7280" fontSize={12} />
-                  <YAxis stroke="#6B7280" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="gaps" fill="#EF4444" name="Skill Gaps" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="total" fill="#9CA3AF" name="Total Skills" opacity={0.3} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Competency Radar Chart */}
-        <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Target className="h-5 w-5 text-blue-600" />
-              </div>
-              Overall Competency Profile
-            </CardTitle>
-            <CardDescription className="text-gray-600 text-sm leading-relaxed">
-              Current vs Required skill levels across key areas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ChartContainer
-              config={{
-                current: { label: "Current Level", color: "#3B82F6" },
-                required: { label: "Required Level", color: "#10B981" },
-              }}
-              className="h-[320px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart
-                  data={analyticsData.competencyRadarData}
-                  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-                >
-                  <PolarGrid stroke="#E5E7EB" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fill: "#6B7280", fontSize: 12 }} />
-                  <PolarRadiusAxis domain={[0, 5]} tick={{ fill: "#6B7280", fontSize: 10 }} />
-                  <Radar name="Current" dataKey="current" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.3} />
-                  <Radar name="Required" dataKey="required" stroke="#10B981" fill="#10B981" fillOpacity={0.1} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <Card className="bg-white border border-gray-200 shadow-sm">
+      <Card className="bg-white border border-gray-200 shadow-sm mb-5">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold text-gray-900">Competency Filters</CardTitle>
           <CardDescription className="text-gray-600">Filter and search competencies</CardDescription>
