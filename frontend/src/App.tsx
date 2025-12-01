@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import MainLayout from "./layouts/MainLayout";
 import UserManagement from "./pages/UserManagement";
+import EmployeeManagement from "./pages/EmployeeManagement";
 import CompetencyManagement from "./pages/CompetencyManagement";
 import LearningManagement from "./pages/LearningManagement";
 import PerformanceAnalysis from "./pages/PerformanceAnalysis";
@@ -41,7 +42,7 @@ const ProtectedRoute = ({
     return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
-  if (roles && !roles.some(role => user.role?.includes(role))) {
+  if (roles && user.role && !roles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -83,6 +84,11 @@ function App() {
           path: "users", 
           element: <UserManagement />,
           roles: ["ADMIN"] 
+        },
+        { 
+          path: "employees", 
+          element: <EmployeeManagement />,
+          roles: ["ADMIN", "USER"] 
         },
         { 
           path: "competencies", 

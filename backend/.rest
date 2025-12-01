@@ -1,6 +1,18 @@
+### Variables
+@baseUrl = http://localhost:5000/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODI3MTQ2NTNlYmM5OWE3NTc4ZmY3NTMiLCJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiaWF0IjoxNzYzNzU5NDQxLCJleHAiOjE3NjM4NDU4NDF9.y6pH2_-gER2hOVJo2rbowzSaOTBC8kVLXjmoG4m7_cQ
+@categoryId = YOUR_CATEGORY_ID_HERE
+@competencyId = YOUR_COMPETENCY_ID_HERE
+@employeeId = YOUR_EMPLOYEE_ID_HERE
+@employeeCompetencyId = YOUR_EMPLOYEE_COMPETENCY_ID_HERE
+@recommendationId = YOUR_RECOMMENDATION_ID_HERE
+
+### ============================================
+### AUTHENTICATION
+### ============================================
+
 ### Register User
-##
-POST http://localhost:5000/api/v1/auth/register
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
@@ -11,8 +23,7 @@ Content-Type: application/json
 }
 
 ### Login User
-##
-POST http://localhost:5001/api/auth/login
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
@@ -20,14 +31,429 @@ Content-Type: application/json
     "password": "123"
 }
 
-###  User Profile
-##
-GET http://localhost:5001/api/auth/profile
+### User Profile
+GET {{baseUrl}}/auth/profile
 Content-Type: application/json
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBiZDJlZDE4N2RkYTE2NDczNGVlZjQiLCJlbWFpbCI6InJhZmZ5c29saXMxMjNAZ21haWwuY29tIiwiaWF0IjoxNzQ1NjA3MDIxLCJleHAiOjE3NDU2OTM0MjF9.7g-XoGO4reoDQDuYvO95ZFx1zqJj3akQreBUbrRfpWA
-
+Cookie: accessToken={{token}}
 
 ### Get Users
-##
-GET http://localhost:5001/api/account/users
+GET {{baseUrl}}/account/users
 Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### ============================================
+### COMPETENCY CATEGORY ENDPOINTS
+### ============================================
+
+### Create Competency Category (HR/Admin only)
+### Note: First create JobRoles, then use their IDs in jobRoleIds array
+POST {{baseUrl}}/competency-category/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Technical Skills",
+    "description": "Technical and programming competencies",
+    "jobRoleIds": ["job_role_id_1", "job_role_id_2", "job_role_id_3"]
+}
+
+### Get All Categories
+GET {{baseUrl}}/competency-category/list
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Categories by Job Role ID (filter)
+GET {{baseUrl}}/competency-category/list?jobRoleId=job_role_id_here
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Categories by Employee ID (auto-filter by employee's position)
+GET {{baseUrl}}/competency-category/list?employeeId={{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Category by ID
+GET {{baseUrl}}/competency-category/{{categoryId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Update Category (HR/Admin only)
+PUT {{baseUrl}}/competency-category/update/{{categoryId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Technical Skills Updated",
+    "description": "Updated description for technical skills",
+    "jobRoleIds": ["job_role_id_1", "job_role_id_2", "job_role_id_3", "job_role_id_4"]
+}
+
+### Delete Category (HR/Admin only)
+DELETE {{baseUrl}}/competency-category/delete/{{categoryId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### ============================================
+### COMPETENCY ENDPOINTS
+### ============================================
+
+### Create Competency (HR/Admin only)
+POST {{baseUrl}}/competency/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "JavaScript Programming",
+    "description": "Ability to write and maintain JavaScript code",
+    "categoryId": "{{categoryId}}",
+    "weight": 80,
+    "levels": [
+        {
+            "levelNumber": 1,
+            "title": "Beginner",
+            "definition": "Basic understanding of JavaScript syntax"
+        },
+        {
+            "levelNumber": 2,
+            "title": "Intermediate",
+            "definition": "Can write functions and work with arrays/objects"
+        },
+        {
+            "levelNumber": 3,
+            "title": "Advanced",
+            "definition": "Proficient with async/await, promises, and ES6+ features"
+        },
+        {
+            "levelNumber": 4,
+            "title": "Expert",
+            "definition": "Can architect complex applications and optimize performance"
+        },
+        {
+            "levelNumber": 5,
+            "title": "Master",
+            "definition": "Industry expert, can mentor others and contribute to language evolution"
+        }
+    ]
+}
+
+### Get All Competencies
+GET {{baseUrl}}/competency/list
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Competencies by Job Role ID (filter)
+GET {{baseUrl}}/competency/list?jobRoleId=job_role_id_here
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Competencies by Employee ID (auto-filter by employee's position)
+GET {{baseUrl}}/competency/list?employeeId={{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Competency by ID
+GET {{baseUrl}}/competency/{{competencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Update Competency (HR/Admin only)
+PUT {{baseUrl}}/competency/update/{{competencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "JavaScript Programming Updated",
+    "description": "Updated description",
+    "weight": 85,
+    "levels": [
+        {
+            "levelNumber": 1,
+            "title": "Beginner",
+            "definition": "Basic understanding of JavaScript syntax"
+        },
+        {
+            "levelNumber": 2,
+            "title": "Intermediate",
+            "definition": "Can write functions and work with arrays/objects"
+        },
+        {
+            "levelNumber": 3,
+            "title": "Advanced",
+            "definition": "Proficient with async/await, promises, and ES6+ features"
+        },
+        {
+            "levelNumber": 4,
+            "title": "Expert",
+            "definition": "Can architect complex applications and optimize performance"
+        },
+        {
+            "levelNumber": 5,
+            "title": "Master",
+            "definition": "Industry expert, can mentor others and contribute to language evolution"
+        }
+    ]
+}
+
+### Delete Competency (HR/Admin only)
+DELETE {{baseUrl}}/competency/delete/{{competencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Assign Competency to Employee (HR/Manager/Admin)
+POST {{baseUrl}}/competency/assign
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "employeeId": "{{employeeId}}",
+    "competencyId": "{{competencyId}}"
+}
+
+### Update Self-Rating (Employee)
+PUT {{baseUrl}}/competency/self-rating/{{employeeCompetencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "selfRating": 4
+}
+
+### Update Manager Rating (HR/Manager/Admin)
+PUT {{baseUrl}}/competency/manager-rating/{{employeeCompetencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "managerRating": 3,
+    "notes": "Good progress, needs more practice with async operations"
+}
+
+### Upload Attachment (Certificate/Resume/Portfolio)
+POST {{baseUrl}}/competency/upload/{{employeeCompetencyId}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{token}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="certificate.pdf"
+Content-Type: application/pdf
+
+< ./path/to/certificate.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get Employee Competencies
+GET {{baseUrl}}/competency/employee/{{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Run Gap Analysis
+POST {{baseUrl}}/competency/gap-analysis
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "employeeId": "{{employeeId}}",
+    "competencyId": "{{competencyId}}"
+}
+
+### Get Gap Analysis
+GET {{baseUrl}}/competency/gap-analysis/{{employeeId}}?competencyId={{competencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get All Gap Analyses for Employee
+GET {{baseUrl}}/competency/gap-analysis/{{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Generate Gap Report
+GET {{baseUrl}}/competency/gap-report/{{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Recommendations for Employee
+GET {{baseUrl}}/competency/recommendations/{{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Analytics
+GET {{baseUrl}}/competency/analytics
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Legacy: Add Assessment (Deprecated)
+POST {{baseUrl}}/competency/assessment
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "employeeId": "{{employeeId}}",
+    "competencyId": "{{competencyId}}",
+    "currentLevel": 3,
+    "requiredLevel": 4
+}
+
+### ============================================
+### TRAINING RECOMMENDATION ENDPOINTS
+### ============================================
+
+### Create Training Recommendation (HR/Admin only)
+POST {{baseUrl}}/training-recommendation/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "competencyId": "{{competencyId}}",
+    "title": "JavaScript Advanced Course",
+    "description": "Comprehensive course covering advanced JavaScript concepts",
+    "link": "https://example.com/course/javascript-advanced",
+    "difficultyLevel": 3,
+    "courseId": null
+}
+
+### Get All Recommendations
+GET {{baseUrl}}/training-recommendation/list
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Recommendation by ID
+GET {{baseUrl}}/training-recommendation/{{recommendationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Recommendations by Competency
+GET {{baseUrl}}/training-recommendation/competency/{{competencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get Recommendations by Difficulty Level
+GET {{baseUrl}}/training-recommendation/difficulty/3
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Update Recommendation (HR/Admin only)
+PUT {{baseUrl}}/training-recommendation/update/{{recommendationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "title": "JavaScript Advanced Course - Updated",
+    "description": "Updated course description",
+    "difficultyLevel": 4,
+    "link": "https://example.com/course/javascript-advanced-v2"
+}
+
+### Delete Recommendation (HR/Admin only)
+DELETE {{baseUrl}}/training-recommendation/delete/{{recommendationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING WORKFLOW EXAMPLES
+### ============================================
+
+### Example: Complete Workflow
+### 1. Create Category
+POST {{baseUrl}}/competency-category/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Soft Skills",
+    "description": "Interpersonal and communication skills"
+}
+
+### 2. Create Competency
+POST {{baseUrl}}/competency/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Communication",
+    "description": "Ability to effectively communicate with team members",
+    "categoryId": "{{categoryId}}",
+    "weight": 70,
+    "levels": [
+        {
+            "levelNumber": 1,
+            "title": "Basic",
+            "definition": "Can communicate basic information"
+        },
+        {
+            "levelNumber": 2,
+            "title": "Developing",
+            "definition": "Can explain concepts clearly"
+        },
+        {
+            "levelNumber": 3,
+            "title": "Proficient",
+            "definition": "Effective in team communication"
+        },
+        {
+            "levelNumber": 4,
+            "title": "Advanced",
+            "definition": "Can lead discussions and presentations"
+        },
+        {
+            "levelNumber": 5,
+            "title": "Expert",
+            "definition": "Master communicator, can influence and negotiate"
+        }
+    ]
+}
+
+### 3. Assign to Employee
+POST {{baseUrl}}/competency/assign
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "employeeId": "{{employeeId}}",
+    "competencyId": "{{competencyId}}"
+}
+
+### 4. Employee Updates Self-Rating
+PUT {{baseUrl}}/competency/self-rating/{{employeeCompetencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "selfRating": 3
+}
+
+### 5. Manager Updates Rating
+PUT {{baseUrl}}/competency/manager-rating/{{employeeCompetencyId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "managerRating": 4,
+    "notes": "Excellent communication skills demonstrated in recent project"
+}
+
+### 6. Run Gap Analysis
+POST {{baseUrl}}/competency/gap-analysis
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "employeeId": "{{employeeId}}",
+    "competencyId": "{{competencyId}}"
+}
+
+### 7. Get Recommendations
+GET {{baseUrl}}/competency/recommendations/{{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 8. Create Training Recommendation
+POST {{baseUrl}}/training-recommendation/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "competencyId": "{{competencyId}}",
+    "title": "Advanced Communication Workshop",
+    "description": "Workshop on advanced communication techniques",
+    "link": "https://example.com/workshop/communication",
+    "difficultyLevel": 4
+}

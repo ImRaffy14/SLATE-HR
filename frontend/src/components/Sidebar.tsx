@@ -1,10 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Users, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban } from "lucide-react"
+import { Users, UserCheck, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban } from "lucide-react"
 import { NavLink, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { logout } from "@/api/auth"
 import toast from "react-hot-toast"
 import { useAuth } from "@/context/authContext"
 import LOGO from '@/assets/slate-logo.png';
@@ -12,7 +11,7 @@ import LOGO from '@/assets/slate-logo.png';
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout: logoutFromContext } = useAuth()
 
   const isAdmin = user?.role?.includes("ADMIN")
 
@@ -20,6 +19,7 @@ function Sidebar() {
 
   const adminMenuItems = [
     { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
+    { id: "employees", path: "/employees", icon: <UserCheck size={20} />, label: "Employee Management" },
     { id: "learning", path: "/learning", icon: <BookPlus size={20} />, label: "Learning Management" },
     { id: "training", path: "/training", icon: <RailSymbol size={20} />, label: "Training Management" },
     { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
@@ -29,6 +29,7 @@ function Sidebar() {
 
   const userMenuItems = [
     { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
+    { id: "employees", path: "/employees", icon: <UserCheck size={20} />, label: "Employee Management" },
     { id: "learning", path: "/learning", icon: <BookPlus size={20} />, label: "Learning Management" },
     { id: "training", path: "/training", icon: <RailSymbol size={20} />, label: "Training Management" },
     { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
@@ -38,11 +39,13 @@ function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      const result = await logout()
-      toast.success(result.message)
+      await logoutFromContext()
+      toast.success("Logged out successfully")
       navigate("/login")
     } catch (error) {
       toast.error("Failed to logout")
+      // Still navigate to login even if logout fails
+      navigate("/login")
     }
   }
 

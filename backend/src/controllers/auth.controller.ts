@@ -28,11 +28,12 @@ export class AuthController {
       .json({
         status: 'success',
         message: 'Logged in successfully',
+        token: userLoggedIn.token, // Include token in response body
       });
   });
 
   getUserProfile = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const userId = req.userId || req.user?.id;
     const userData = await prisma.user.findUnique({
       where: { id: userId },
     });

@@ -18,6 +18,9 @@ datasource db {
 enum UserRole {
   ADMIN
   USER
+  HR
+  MANAGER
+  EMPLOYEE
 }
 
 enum EnrollmentStatus {
@@ -29,6 +32,21 @@ enum EnrollmentStatus {
 enum EmployeeStatus {
   ACTIVE
   INACTIVE
+}
+
+// =======================================
+// JOB ROLES
+// =======================================
+
+model JobRole {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // e.g., "Software Developer", "IT Manager", "HR Manager"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employees Employee[]
+  // competencyCategories is stored as jobRoleIds array in CompetencyCategory
 }
 
 // =======================================
@@ -77,31 +95,52 @@ model Employee {
   name        String
   email       String?
   department  String?
-  position    String?
+  position    String?  // Keep for backward compatibility / display
+  positionId  String?  @db.ObjectId // FK to JobRole
   dateHired   DateTime?
   status      EmployeeStatus @default(ACTIVE)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  competencies CompetencyAssessment[]
-  enrollments  Enrollment[]
-  trainings    TrainingRecord[]
-  performance  Performance[]
-  succession   SuccessionPlan[]
-
-  CourseFeedback CourseFeedback[]
+  jobRole            JobRole?          @relation(fields: [positionId], references: [id])
+  competencies       EmployeeCompetency[]
+  gapAnalyses        GapAnalysis[]
+  enrollments        Enrollment[]
+  trainings          TrainingRecord[]
+  performance        Performance[]
+  succession         SuccessionPlan[]
+  CourseFeedback     CourseFeedback[]
 }
 
 // =======================================
 // COMPETENCY MANAGEMENT
 // =======================================
 
+model CompetencyCategory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  description String?
+  jobRoleIds  String[] @db.ObjectId // Array of JobRole IDs that this category applies to
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  competencies Competency[]
+  // jobRoles are referenced via jobRoleIds array
+}
+
+type ProficiencyLevel {
+  levelNumber Int      // 1-5
+  title       String
+  definition  String
+}
+
 model Competency {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  requiredLevel Int
-  category    String
+  categoryId  String   @db.ObjectId
+  levels      ProficiencyLevel[]
+  weight      Int      // 1-100
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -111,19 +150,56 @@ model Competency {
   creator     User     @relation("CompetencyCreatedBy", fields: [createdBy], references: [id])
   updater     User?    @relation("CompetencyUpdatedBy", fields: [updatedBy], references: [id])
 
-  assessments CompetencyAssessment[]
+  category            CompetencyCategory @relation(fields: [categoryId], references: [id])
+  employeeCompetencies EmployeeCompetency[]
+  gapAnalyses         GapAnalysis[]
+  recommendations     TrainingRecommendation[]
 }
 
-model CompetencyAssessment {
+model EmployeeCompetency {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   employeeId    String   @db.ObjectId
   competencyId  String   @db.ObjectId
-  selfScore     Int
-  hrScore       Int
+  selfRating    Int?     // 1-5
+  managerRating Int?     // 1-5
+  finalScore    Float?   // calculated: (selfRating * 0.3 + managerRating * 0.7) * weight
+  attachments   String[] // array of file URLs
+  updatedBy     String?  @db.ObjectId // HR or Manager userId
+  notes         String?
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   employee   Employee   @relation(fields: [employeeId], references: [id])
   competency Competency @relation(fields: [competencyId], references: [id])
+}
+
+model GapAnalysis {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId     String   @db.ObjectId
+  competencyId   String   @db.ObjectId
+  requiredLevel  Int      // from competency levels
+  currentLevel   Int      // derived from finalScore
+  gap            Int      // requiredLevel - currentLevel
+  recommendations String[] // array of trainingId strings
+  createdAt      DateTime @default(now())
+
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  competency Competency @relation(fields: [competencyId], references: [id])
+}
+
+model TrainingRecommendation {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  competencyId   String   @db.ObjectId
+  title          String
+  description    String?
+  link           String?
+  difficultyLevel Int     // 1-5
+  courseId       String?  @db.ObjectId // optional link to Course
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  competency Competency @relation(fields: [competencyId], references: [id])
+  course     Course?    @relation(fields: [courseId], references: [id])
 }
 
 // =======================================
@@ -148,6 +224,7 @@ model Course {
 
   enrollments Enrollment[]
   feedbacks   CourseFeedback[]
+  recommendations TrainingRecommendation[]
 
   TrainingSession TrainingSession[]
 }

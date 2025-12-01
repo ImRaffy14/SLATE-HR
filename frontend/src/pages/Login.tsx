@@ -5,6 +5,7 @@ import { login } from '@/api/auth';
 import toast from 'react-hot-toast';
 import { AxiosError } from "axios"
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/authContext';
 import LOGO from '@/assets/slate-logo.png';
 
 
@@ -16,6 +17,7 @@ export default function AdminLoginPage() {
     const [error, setError] = useState('');
     
     const navigate = useNavigate()
+    const { refreshAuth } = useAuth()
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -25,10 +27,22 @@ export default function AdminLoginPage() {
         try {
             const result = await login({ email, password })
             toast.success(result.message)
+            
+            // Ensure token is stored before refreshing auth
+            if (!localStorage.getItem('accessToken')) {
+                throw new Error('Failed to store authentication token')
+            }
+            
+            // Refresh auth context to get user data
+            await refreshAuth()
+            
+            // Navigate after auth is refreshed
             navigate('/')
         } catch (error) {
             const axiosError = error as AxiosError
             setError(axiosError.message)
+            // Clear any partial token on error
+            localStorage.removeItem('accessToken')
         } finally { 
             setIsLoading(false)
         }
