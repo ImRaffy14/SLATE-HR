@@ -73,6 +73,7 @@ import {
   getRecommendationsByCompetency,
 } from "@/api/trainingRecommendation"
 import { getEmployees } from "@/api/employee"
+import { getCourses, enrollEmployee, getEmployeeEnrollments } from "@/api/learning"
 import { Competency, CompetencyCategory, JobRole, ProficiencyLevel, EmployeeCompetency, TrainingRecommendation } from "@/types/competency"
 import {
   getRequiredLevel,
@@ -158,7 +159,6 @@ export default function CompetencyManagement() {
     competencyId: "",
     title: "",
     description: "",
-    link: "",
     difficultyLevel: 1,
     courseId: "",
   })
@@ -169,6 +169,13 @@ export default function CompetencyManagement() {
   const { data: competencies = [], isLoading: isCompetenciesLoading } = useQuery({
     queryKey: ["competencies", selectedJobRoleId],
     queryFn: () => getCompetencies(selectedJobRoleId !== "all" ? selectedJobRoleId : undefined),
+  })
+
+  // Fetch all competencies for Employee Competencies tab (needed to check all employee assignments)
+  const { data: allCompetencies = [] } = useQuery({
+    queryKey: ["competencies", "all"],
+    queryFn: () => getCompetencies(undefined),
+    enabled: activeTab === "employee-competencies",
   })
 
   const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
@@ -195,6 +202,14 @@ export default function CompetencyManagement() {
     queryKey: ["competencyAnalytics"],
     queryFn: getAnalytics,
   })
+
+  // Fetch courses from Learning Management for recommendations
+  const { data: coursesData, isLoading: isCoursesLoading, error: coursesError } = useQuery({
+    queryKey: ["courses", "PUBLISHED"],
+    queryFn: () => getCourses({ status: "PUBLISHED" }),
+    staleTime: 30000, // Cache for 30 seconds
+  })
+  const courses = coursesData?.courses || []
 
   // Mutations
   const { mutate: createCompetencyMutate, isPending: isCreatingCompetency } = useMutation({
@@ -370,6 +385,20 @@ export default function CompetencyManagement() {
     },
   })
 
+  const { mutate: enrollEmployeeMutate, isPending: isEnrolling } = useMutation({
+    mutationFn: ({ employeeId, courseId }: { employeeId: string; courseId: string }) =>
+      enrollEmployee({ employeeId, courseId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employeeEnrollments"] })
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      toast.success("Employee enrolled in course successfully!")
+      refetchEmployeeEnrollments()
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to enroll employee in course")
+    },
+  })
+
   // Queries for modals
   const { data: employeeCompetenciesData, isLoading: isEmployeeCompetenciesLoading } = useQuery({
     queryKey: ["employeeCompetencies", selectedEmployee?.id],
@@ -405,6 +434,16 @@ export default function CompetencyManagement() {
       return getEmployeeRecommendations(selectedEmployee.id)
     },
     enabled: !!selectedEmployee?.id && isRecommendationsModalOpen,
+  })
+
+  // Fetch employee enrollments to check if already enrolled in recommended courses
+  const { data: employeeEnrollmentsData, refetch: refetchEmployeeEnrollments } = useQuery({
+    queryKey: ["employeeEnrollments", selectedEmployee?.id],
+    queryFn: () => {
+      if (!selectedEmployee?.id) return []
+      return getEmployeeEnrollments(selectedEmployee.id)
+    },
+    enabled: !!selectedEmployee?.id && isGapAnalysisModalOpen,
   })
 
   // Helper functions
@@ -447,7 +486,6 @@ export default function CompetencyManagement() {
       competencyId: "",
       title: "",
       description: "",
-      link: "",
       difficultyLevel: 1,
       courseId: "",
     })
@@ -687,6 +725,23 @@ export default function CompetencyManagement() {
       toast.error("Competency and title are required")
       return
     }
+    if (!recommendationFormData.courseId) {
+      toast.error("Please select a course from Learning Management")
+      return
+    }
+    
+    // Validate that the selected course has the selected competency tagged
+    const selectedCourse = courses.find((c: any) => c.id === recommendationFormData.courseId)
+    if (!selectedCourse) {
+      toast.error("Selected course not found")
+      return
+    }
+    
+    if (!selectedCourse.taggedCompetencies?.includes(recommendationFormData.competencyId)) {
+      toast.error("The selected course does not have this competency tagged. Please select a course that has the competency tagged.")
+      return
+    }
+    
     createRecommendationMutate(recommendationFormData)
   }
 
@@ -1135,20 +1190,18 @@ export default function CompetencyManagement() {
                   </TableHeader>
                   <TableBody>
                     {(() => {
-                      // Get employees with assigned competencies
-                      const employeesWithCompetencies = employees.filter((employee: any) => {
-                        const hasCompetencies = competencies.some((comp: Competency) =>
-                          comp.employeeCompetencies?.some((ec) => ec.employeeId === employee.id)
-                        )
-                        return hasCompetencies
-                      })
+                      // Use allCompetencies for Employee Competencies tab to see all assignments
+                      const competenciesToCheck = activeTab === "employee-competencies" ? allCompetencies : competencies
 
                       // Filter by search term
-                      const filteredBySearch = employeesWithCompetencies.filter((employee: any) => {
-                        if (!employeeCompetenciesSearchTerm) return true
-                        return employee.name
-                          .toLowerCase()
-                          .includes(employeeCompetenciesSearchTerm.toLowerCase())
+                      const filteredBySearch = employees.filter((employee: any) => {
+                        if (employeeCompetenciesSearchTerm) {
+                          const matchesSearch = employee.name
+                            .toLowerCase()
+                            .includes(employeeCompetenciesSearchTerm.toLowerCase())
+                          if (!matchesSearch) return false
+                        }
+                        return true
                       })
 
                       // Filter by job role
@@ -1162,8 +1215,8 @@ export default function CompetencyManagement() {
                           <TableRow>
                             <TableCell colSpan={6} className="text-center py-8">
                               <p className="text-sm text-gray-500">
-                                {employeesWithCompetencies.length === 0
-                                  ? "No employees with assigned competencies found. Use 'Suggest Competencies' to assign competencies based on job roles."
+                                {employees.length === 0
+                                  ? "No employees found."
                                   : "No employees match the current filters."}
                               </p>
                             </TableCell>
@@ -1172,7 +1225,7 @@ export default function CompetencyManagement() {
                       }
 
                       return filtered.map((employee: any) => {
-                        const employeeComps = competencies
+                        const employeeComps = competenciesToCheck
                           .map((comp: Competency) => {
                             const ec = comp.employeeCompetencies?.find((e) => e.employeeId === employee.id)
                             return ec ? { competency: comp, employeeCompetency: ec } : null
@@ -1389,10 +1442,25 @@ export default function CompetencyManagement() {
                   <CardTitle>Training Recommendations</CardTitle>
                   <CardDescription>Manage training recommendations for competencies</CardDescription>
                 </div>
-                <Button onClick={() => setIsCreateRecommendationModalOpen(true)} className="gap-2">
-                  <Plus size={16} />
-                  Create Recommendation
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      queryClient.invalidateQueries({ queryKey: ["courses"] })
+                    }}
+                    className="gap-2"
+                  >
+                    <Search size={16} />
+                    Refresh Courses
+                  </Button>
+                  <Button onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ["courses"] })
+                    setIsCreateRecommendationModalOpen(true)
+                  }} className="gap-2">
+                    <Plus size={16} />
+                    Create Recommendation
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -1403,7 +1471,7 @@ export default function CompetencyManagement() {
                       <TableHead>Title</TableHead>
                       <TableHead>Competency</TableHead>
                       <TableHead>Difficulty</TableHead>
-                      <TableHead>Link</TableHead>
+                      <TableHead>Course / Link</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1425,17 +1493,21 @@ export default function CompetencyManagement() {
                           <Badge variant="outline">Level {rec.difficultyLevel}</Badge>
                         </TableCell>
                         <TableCell>
-                          {rec.link ? (
-                            <a
-                              href={rec.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              View
-                            </a>
+                          {rec.courseId || rec.course ? (
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="outline" className="w-fit">
+                                <BookOpen size={12} className="mr-1" />
+                                Course: {rec.course?.title || "Course Linked"}
+                              </Badge>
+                              <a
+                                href={`/learning-management?course=${rec.courseId || rec.course?.id}`}
+                                className="text-xs text-blue-600 hover:underline"
+                              >
+                                View in Learning Management
+                              </a>
+                            </div>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-400">No course linked</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -1478,7 +1550,7 @@ export default function CompetencyManagement() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedCompetency ? "Edit Competency" : "Create Competency"}
@@ -1634,7 +1706,7 @@ export default function CompetencyManagement() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw]">
           <DialogHeader>
             <DialogTitle>{selectedCategory ? "Edit Category" : "Create Category"}</DialogTitle>
             <DialogDescription>Create a new competency category</DialogDescription>
@@ -1711,7 +1783,7 @@ export default function CompetencyManagement() {
 
       {/* Assign Competency Modal */}
       <Dialog open={isAssignCompetencyModalOpen} onOpenChange={setIsAssignCompetencyModalOpen}>
-        <DialogContent>
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw]">
           <DialogHeader>
             <DialogTitle>Assign Competency to Employee</DialogTitle>
             <DialogDescription>Assign a competency to an employee for assessment</DialogDescription>
@@ -1771,7 +1843,7 @@ export default function CompetencyManagement() {
 
       {/* Update Rating Modal (deprecated - kept for backward compatibility) */}
       <Dialog open={isUpdateRatingModalOpen} onOpenChange={setIsUpdateRatingModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update Manager Rating</DialogTitle>
             <DialogDescription>
@@ -1879,7 +1951,7 @@ export default function CompetencyManagement() {
 
       {/* Bulk Rating Modal */}
       <Dialog open={isBulkRatingModalOpen} onOpenChange={setIsBulkRatingModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+        <DialogContent className="!max-w-[98vw] !w-[98vw] sm:!max-w-[98vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Rate Employee Competencies</DialogTitle>
             <DialogDescription>
@@ -1894,7 +1966,7 @@ export default function CompetencyManagement() {
                 <CardTitle className="text-lg">Employee Information</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-500">Name</Label>
                     <p className="font-medium">{selectedEmployee.name}</p>
@@ -2007,7 +2079,7 @@ export default function CompetencyManagement() {
                       {sortedLevels.length > 0 && (
                         <div className="space-y-2">
                           <Label className="text-sm font-semibold">Available Proficiency Levels</Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg">
                             {sortedLevels.map((level: ProficiencyLevel) => (
                               <div key={level.levelNumber} className="text-sm">
                                 <div className="flex items-start gap-2">
@@ -2112,7 +2184,7 @@ export default function CompetencyManagement() {
 
       {/* Suggest Competencies Modal */}
       <Dialog open={isSuggestCompetenciesModalOpen} onOpenChange={setIsSuggestCompetenciesModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Suggest Competencies</DialogTitle>
             <DialogDescription>
@@ -2198,7 +2270,7 @@ export default function CompetencyManagement() {
 
       {/* View Competency Modal */}
       <Dialog open={isViewCompetencyModalOpen} onOpenChange={setIsViewCompetencyModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Competency Details</DialogTitle>
             <DialogDescription>View detailed information about this competency</DialogDescription>
@@ -2276,7 +2348,7 @@ export default function CompetencyManagement() {
 
       {/* Delete Competency Modal */}
       <Dialog open={isDeleteCompetencyModalOpen} onOpenChange={setIsDeleteCompetencyModalOpen}>
-        <DialogContent>
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw]">
           <DialogHeader>
             <DialogTitle>Delete Competency</DialogTitle>
             <DialogDescription>
@@ -2327,7 +2399,7 @@ export default function CompetencyManagement() {
 
       {/* Delete Category Modal */}
       <Dialog open={isDeleteCategoryModalOpen} onOpenChange={setIsDeleteCategoryModalOpen}>
-        <DialogContent>
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw]">
           <DialogHeader>
             <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>
@@ -2378,7 +2450,7 @@ export default function CompetencyManagement() {
 
       {/* Delete Recommendation Modal */}
       <Dialog open={isDeleteRecommendationModalOpen} onOpenChange={setIsDeleteRecommendationModalOpen}>
-        <DialogContent>
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw]">
           <DialogHeader>
             <DialogTitle>Delete Recommendation</DialogTitle>
             <DialogDescription>
@@ -2421,7 +2493,7 @@ export default function CompetencyManagement() {
 
       {/* Employee Competencies Modal */}
       <Dialog open={isEmployeeCompetenciesModalOpen} onOpenChange={setIsEmployeeCompetenciesModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Employee Competencies</DialogTitle>
             <DialogDescription>
@@ -2543,7 +2615,7 @@ export default function CompetencyManagement() {
 
       {/* Gap Analysis Modal */}
       <Dialog open={isGapAnalysisModalOpen} onOpenChange={setIsGapAnalysisModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+        <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Gap Analysis Details</DialogTitle>
             <DialogDescription>
@@ -2626,40 +2698,75 @@ export default function CompetencyManagement() {
                                     Training Recommendations ({displayRecommendations.length})
                                   </Label>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {displayRecommendations.map((rec: TrainingRecommendation) => (
-                                      <Card key={rec.id} className="bg-blue-50 border-blue-200 hover:border-blue-300 transition-colors">
-                                        <CardContent className="pt-4">
-                                          <div className="space-y-2">
-                                            <div className="font-medium text-sm text-blue-900">{rec.title}</div>
-                                            {rec.description && (
-                                              <p className="text-xs text-gray-700 line-clamp-3">{rec.description}</p>
-                                            )}
-                                            <div className="flex items-center flex-wrap gap-2 mt-3">
-                                              <Badge variant="outline" className="text-xs">
-                                                Difficulty: {rec.difficultyLevel}/5
-                                              </Badge>
-                                              {rec.link && (
-                                                <a
-                                                  href={rec.link}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
-                                                  onClick={(e) => e.stopPropagation()}
-                                                >
-                                                  <BookOpen size={12} />
-                                                  View Resource
-                                                </a>
+                                    {displayRecommendations.map((rec: TrainingRecommendation) => {
+                                      const courseId = rec.courseId || rec.course?.id
+                                      const isEnrolled = courseId && employeeEnrollmentsData?.some((enrollment: any) => 
+                                        enrollment.courseId === courseId
+                                      )
+                                      
+                                      return (
+                                        <Card key={rec.id} className="bg-blue-50 border-blue-200 hover:border-blue-300 transition-colors">
+                                          <CardContent className="pt-4">
+                                            <div className="space-y-2">
+                                              <div className="font-medium text-sm text-blue-900">{rec.title}</div>
+                                              {rec.description && (
+                                                <p className="text-xs text-gray-700 line-clamp-3">{rec.description}</p>
                                               )}
-                                              {rec.course && (
+                                              <div className="flex items-center flex-wrap gap-2 mt-3">
                                                 <Badge variant="outline" className="text-xs">
-                                                  Course: {rec.course.title}
+                                                  Difficulty: {rec.difficultyLevel}/5
                                                 </Badge>
-                                              )}
+                                                {rec.courseId || rec.course ? (
+                                                  <div className="flex flex-col gap-2 w-full">
+                                                    <Badge variant="outline" className="text-xs w-fit">
+                                                      <BookOpen size={12} className="mr-1" />
+                                                      Course: {rec.course?.title || "Course Linked"}
+                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                      <a
+                                                        href={`/learning-management?course=${courseId}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                      >
+                                                        <BookOpen size={12} />
+                                                        View Course
+                                                      </a>
+                                                      {isEnrolled ? (
+                                                        <Badge variant="default" className="text-xs">
+                                                          <Check size={12} className="mr-1" />
+                                                          Enrolled
+                                                        </Badge>
+                                                      ) : (
+                                                        <Button
+                                                          size="sm"
+                                                          variant="default"
+                                                          className="h-6 text-xs px-2"
+                                                          onClick={() => {
+                                                            if (selectedEmployee?.id && courseId) {
+                                                              enrollEmployeeMutate({
+                                                                employeeId: selectedEmployee.id,
+                                                                courseId: courseId,
+                                                              })
+                                                            }
+                                                          }}
+                                                          disabled={isEnrolling}
+                                                        >
+                                                          {isEnrolling ? "Enrolling..." : "Enroll"}
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <span className="text-xs text-gray-500">No course linked</span>
+                                                )}
+                                              </div>
                                             </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    ))}
+                                          </CardContent>
+                                        </Card>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -2708,7 +2815,7 @@ export default function CompetencyManagement() {
 
       {/* Recommendations Modal */}
       <Dialog open={isRecommendationsModalOpen} onOpenChange={setIsRecommendationsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Training Recommendations</DialogTitle>
             <DialogDescription>
@@ -2738,15 +2845,23 @@ export default function CompetencyManagement() {
                                 <Badge variant="outline">{rec.competency.name}</Badge>
                               )}
                             </div>
-                            {rec.link && (
-                              <a
-                                href={rec.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline text-sm mt-2 inline-block"
-                              >
-                                View Resource
-                              </a>
+                            {rec.courseId || rec.course ? (
+                              <div className="mt-2 space-y-1">
+                                <Badge variant="outline" className="text-sm">
+                                  <BookOpen size={12} className="mr-1" />
+                                  Course: {rec.course?.title || "Course Linked"}
+                                </Badge>
+                                <a
+                                  href={`/learning-management?course=${rec.courseId || rec.course?.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline text-sm inline-block"
+                                >
+                                  View in Learning Management →
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500 mt-2">No course linked</span>
                             )}
                           </div>
                         </div>
@@ -2771,7 +2886,7 @@ export default function CompetencyManagement() {
 
       {/* Create Recommendation Modal */}
       <Dialog open={isCreateRecommendationModalOpen} onOpenChange={setIsCreateRecommendationModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="!max-w-[85vw] !w-[85vw] sm:!max-w-[85vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Training Recommendation</DialogTitle>
             <DialogDescription>
@@ -2821,15 +2936,67 @@ export default function CompetencyManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Link</Label>
-              <Input
-                value={recommendationFormData.link}
-                onChange={(e) =>
-                  setRecommendationFormData({ ...recommendationFormData, link: e.target.value })
+              <Label>Course (from Learning Management) *</Label>
+              {isCoursesLoading ? (
+                <div className="p-3 border rounded-lg">
+                  <p className="text-sm text-gray-500">Loading courses...</p>
+                </div>
+              ) : coursesError ? (
+                <div className="p-3 border border-red-200 bg-red-50 rounded-lg">
+                  <p className="text-sm text-red-800">
+                    Error loading courses: {coursesError instanceof Error ? coursesError.message : "Unknown error"}
+                  </p>
+                </div>
+              ) : !recommendationFormData.competencyId ? (
+                <div className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    Please select a competency first to see matching courses.
+                  </p>
+                </div>
+              ) : (() => {
+                // Filter to only show courses with the selected competency tagged
+                const matchingCourses = courses.filter((course: any) => 
+                  course.taggedCompetencies?.includes(recommendationFormData.competencyId)
+                )
+                
+                if (matchingCourses.length === 0) {
+                  return (
+                    <div className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
+                      <p className="text-sm text-yellow-800 font-medium">
+                        No courses found with this competency tagged.
+                      </p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Please go to Learning Management and tag a course with "{competencies.find((c: Competency) => c.id === recommendationFormData.competencyId)?.name}" competency, then publish it.
+                      </p>
+                    </div>
+                  )
                 }
-                placeholder="https://example.com/course"
-                type="url"
-              />
+                
+                return (
+                  <>
+                    <Select
+                      value={recommendationFormData.courseId}
+                      onValueChange={(value) =>
+                        setRecommendationFormData({ ...recommendationFormData, courseId: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {matchingCourses.map((course: any) => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.title} ({course.courseId || course.id})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      {matchingCourses.length} course{matchingCourses.length !== 1 ? 's' : ''} available with this competency tagged
+                    </p>
+                  </>
+                )
+              })()}
             </div>
             <div className="space-y-2">
               <Label>Difficulty Level (1-5) *</Label>

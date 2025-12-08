@@ -27,6 +27,31 @@ enum EnrollmentStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED
+  FAILED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MaterialType {
+  PDF
+  FILE
+  VIDEO
+  YOUTUBE
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum EnrollmentType {
+  MANUAL
+  AUTO
+  SELF
 }
 
 enum EmployeeStatus {
@@ -90,26 +115,26 @@ type Image {
 // =======================================
 
 model Employee {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId  String   @unique // external HRIS/ERP reference
-  name        String
-  email       String?
-  department  String?
-  position    String?  // Keep for backward compatibility / display
-  positionId  String?  @db.ObjectId // FK to JobRole
-  dateHired   DateTime?
-  status      EmployeeStatus @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String         @unique // external HRIS/ERP reference
+  name       String
+  email      String?
+  department String?
+  position   String? // Keep for backward compatibility / display
+  positionId String?        @db.ObjectId // FK to JobRole
+  dateHired  DateTime?
+  status     EmployeeStatus @default(ACTIVE)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
-  jobRole            JobRole?          @relation(fields: [positionId], references: [id])
-  competencies       EmployeeCompetency[]
-  gapAnalyses        GapAnalysis[]
-  enrollments        Enrollment[]
-  trainings          TrainingRecord[]
-  performance        Performance[]
-  succession         SuccessionPlan[]
-  CourseFeedback     CourseFeedback[]
+  jobRole        JobRole?             @relation(fields: [positionId], references: [id])
+  competencies   EmployeeCompetency[]
+  gapAnalyses    GapAnalysis[]
+  enrollments    Enrollment[]
+  trainings      TrainingRecord[]
+  performance    Performance[]
+  succession     SuccessionPlan[]
+  CourseFeedback CourseFeedback[]
 }
 
 // =======================================
@@ -129,40 +154,40 @@ model CompetencyCategory {
 }
 
 type ProficiencyLevel {
-  levelNumber Int      // 1-5
+  levelNumber Int // 1-5
   title       String
   definition  String
 }
 
 model Competency {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String             @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  categoryId  String   @db.ObjectId
+  categoryId  String             @db.ObjectId
   levels      ProficiencyLevel[]
-  weight      Int      // 1-100
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  weight      Int // 1-100
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   // Audit fields
-  createdBy   String   @db.ObjectId
-  updatedBy   String?  @db.ObjectId
-  creator     User     @relation("CompetencyCreatedBy", fields: [createdBy], references: [id])
-  updater     User?    @relation("CompetencyUpdatedBy", fields: [updatedBy], references: [id])
+  createdBy String  @db.ObjectId
+  updatedBy String? @db.ObjectId
+  creator   User    @relation("CompetencyCreatedBy", fields: [createdBy], references: [id])
+  updater   User?   @relation("CompetencyUpdatedBy", fields: [updatedBy], references: [id])
 
-  category            CompetencyCategory @relation(fields: [categoryId], references: [id])
+  category             CompetencyCategory       @relation(fields: [categoryId], references: [id])
   employeeCompetencies EmployeeCompetency[]
-  gapAnalyses         GapAnalysis[]
-  recommendations     TrainingRecommendation[]
+  gapAnalyses          GapAnalysis[]
+  recommendations      TrainingRecommendation[]
 }
 
 model EmployeeCompetency {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   employeeId    String   @db.ObjectId
   competencyId  String   @db.ObjectId
-  selfRating    Int?     // 1-5
-  managerRating Int?     // 1-5
-  finalScore    Float?   // calculated: (selfRating * 0.3 + managerRating * 0.7) * weight
+  selfRating    Int? // 1-5
+  managerRating Int? // 1-5
+  finalScore    Float? // calculated: (selfRating * 0.3 + managerRating * 0.7) * weight
   attachments   String[] // array of file URLs
   updatedBy     String?  @db.ObjectId // HR or Manager userId
   notes         String?
@@ -174,29 +199,29 @@ model EmployeeCompetency {
 }
 
 model GapAnalysis {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId     String   @db.ObjectId
-  competencyId   String   @db.ObjectId
-  requiredLevel  Int      // from competency levels
-  currentLevel   Int      // derived from finalScore
-  gap            Int      // requiredLevel - currentLevel
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId      String   @db.ObjectId
+  competencyId    String   @db.ObjectId
+  requiredLevel   Int // from competency levels
+  currentLevel    Int // derived from finalScore
+  gap             Int // requiredLevel - currentLevel
   recommendations String[] // array of trainingId strings
-  createdAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
 
   employee   Employee   @relation(fields: [employeeId], references: [id])
   competency Competency @relation(fields: [competencyId], references: [id])
 }
 
 model TrainingRecommendation {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  competencyId   String   @db.ObjectId
-  title          String
-  description    String?
-  link           String?
-  difficultyLevel Int     // 1-5
-  courseId       String?  @db.ObjectId // optional link to Course
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  competencyId    String   @db.ObjectId
+  title           String
+  description     String?
+  link            String?
+  difficultyLevel Int // 1-5
+  courseId        String?  @db.ObjectId // optional link to Course
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   competency Competency @relation(fields: [competencyId], references: [id])
   course     Course?    @relation(fields: [courseId], references: [id])
@@ -206,54 +231,161 @@ model TrainingRecommendation {
 // LEARNING MANAGEMENT
 // =======================================
 
-model Course {
+model CourseCategory {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
+  name        String   @unique
   description String?
-  category   String
-  duration    Int
-  courseMaterial String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses Course[]
+}
+
+model Course {
+  id                 String       @id @default(auto()) @map("_id") @db.ObjectId
+  courseId           String       @unique
+  title              String
+  description        String?
+  categoryId         String?      @db.ObjectId
+  taggedCompetencies String[]     @db.ObjectId // Array of Competency IDs
+  status             CourseStatus @default(DRAFT)
+  duration           Int // in minutes
+  estimatedHours     Int // for learning hours tracking
+  isRequired         Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   // Audit fields
-  createdBy   String   @db.ObjectId
-  updatedBy   String?  @db.ObjectId
-  creator     User     @relation("CourseCreatedBy", fields: [createdBy], references: [id])
-  updater     User?    @relation("CourseUpdatedBy", fields: [updatedBy], references: [id])
+  createdBy String  @db.ObjectId
+  updatedBy String? @db.ObjectId
+  creator   User    @relation("CourseCreatedBy", fields: [createdBy], references: [id])
+  updater   User?   @relation("CourseUpdatedBy", fields: [updatedBy], references: [id])
 
-  enrollments Enrollment[]
-  feedbacks   CourseFeedback[]
-  recommendations TrainingRecommendation[]
+  category         CourseCategory?          @relation(fields: [categoryId], references: [id])
+  materials        CourseMaterial[]
+  quizzes          Quiz[]
+  enrollments      Enrollment[]
+  feedbacks        CourseFeedback[]
+  recommendations  TrainingRecommendation[]
+  trainingSessions TrainingSession[]
+}
 
-  TrainingSession TrainingSession[]
+model CourseMaterial {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  courseId    String       @db.ObjectId
+  type        MaterialType
+  url         String
+  title       String
+  description String?
+  order       Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  course   Course                   @relation(fields: [courseId], references: [id])
+  progress EmployeeCourseProgress[]
+}
+
+model Quiz {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId     String   @db.ObjectId
+  title        String
+  description  String?
+  totalPoints  Int
+  passingScore Int // minimum score to pass (percentage)
+  timeLimit    Int? // in minutes, optional
+  allowRetake  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  course    Course         @relation(fields: [courseId], references: [id])
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+}
+
+model QuizQuestion {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  quizId        String       @db.ObjectId
+  question      String
+  questionType  QuestionType
+  points        Int
+  order         Int          @default(0)
+  choices       Json // Array of { text: String, isCorrect: Boolean }
+  correctAnswer String
+
+  quiz Quiz @relation(fields: [quizId], references: [id])
+}
+
+model QuizAttempt {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  enrollmentId String   @db.ObjectId
+  quizId       String   @db.ObjectId
+  answers      Json // Array of { questionId: String, answer: String, isCorrect: Boolean, points: Int }
+  score        Float
+  totalPoints  Float
+  passed       Boolean
+  submittedAt  DateTime @default(now())
+  locked       Boolean  @default(true)
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+  quiz       Quiz       @relation(fields: [quizId], references: [id])
 }
 
 model Enrollment {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId   String   @db.ObjectId
-  courseId     String   @db.ObjectId
-  status       EnrollmentStatus @default(NOT_STARTED)
-  progress     Int      @default(0)
-  enrolledAt   DateTime @default(now())
-  lastActivity DateTime?
+  id                   String           @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId           String           @db.ObjectId
+  courseId             String           @db.ObjectId
+  status               EnrollmentStatus @default(NOT_STARTED)
+  progress             Int              @default(0) // legacy, use completionPercentage
+  completionPercentage Float            @default(0)
+  finalGrade           Float?
+  enrollmentType       EnrollmentType   @default(MANUAL)
+  isRequired           Boolean          @default(false)
+  enrolledAt           DateTime         @default(now())
+  completedAt          DateTime?
+  failedAt             DateTime?
+  lastActivity         DateTime?
 
-  employee Employee @relation(fields: [employeeId], references: [id])
-  course   Course   @relation(fields: [courseId], references: [id])
+  employee        Employee                 @relation(fields: [employeeId], references: [id])
+  course          Course                   @relation(fields: [courseId], references: [id])
+  quizAttempts    QuizAttempt[]
+  progressRecords EmployeeCourseProgress[]
+  certificate     Certificate?
+}
+
+model EmployeeCourseProgress {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  enrollmentId   String    @db.ObjectId
+  materialId     String    @db.ObjectId
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  timeSpent      Int       @default(0) // in minutes
+  lastAccessedAt DateTime?
+
+  enrollment Enrollment     @relation(fields: [enrollmentId], references: [id])
+  material   CourseMaterial @relation(fields: [materialId], references: [id])
+}
+
+model Certificate {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  enrollmentId      String    @unique @db.ObjectId
+  certificateNumber String    @unique
+  pdfUrl            String
+  issuedAt          DateTime  @default(now())
+  expiresAt         DateTime?
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
 }
 
 model CourseFeedback {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId  String   @db.ObjectId
-  courseId    String   @db.ObjectId
-  rating      Int      // 1–5 stars
-  comment     String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String   @db.ObjectId
+  courseId   String   @db.ObjectId
+  rating     Int // 1–5 stars
+  comment    String?
+  createdAt  DateTime @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id])
   course   Course   @relation(fields: [courseId], references: [id])
 }
-
 
 // =======================================
 // TRAINING MANAGEMENT
@@ -266,31 +398,31 @@ model TrainingSession {
   time        String?
   location    String?
   trainer     String?
-  duration   Int      // in minutes
+  duration    Int // in minutes
   title       String
   description String?
   capacity    Int
-  status      String   // Scheduled, Completed, Canceled
+  status      String // Scheduled, Completed, Canceled
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Audit fields
-  createdBy   String   @db.ObjectId
-  updatedBy   String?  @db.ObjectId
-  creator     User     @relation("TrainingSessionCreatedBy", fields: [createdBy], references: [id])
-  updater     User?    @relation("TrainingSessionUpdatedBy", fields: [updatedBy], references: [id])
+  createdBy String  @db.ObjectId
+  updatedBy String? @db.ObjectId
+  creator   User    @relation("TrainingSessionCreatedBy", fields: [createdBy], references: [id])
+  updater   User?   @relation("TrainingSessionUpdatedBy", fields: [updatedBy], references: [id])
 
-  course      Course   @relation(fields: [courseId], references: [id])
-  records     TrainingRecord[]
+  course  Course           @relation(fields: [courseId], references: [id])
+  records TrainingRecord[]
 }
 
 model TrainingRecord {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId    String   @db.ObjectId
-  trainingId    String   @db.ObjectId
-  attendance    Boolean  @default(false)
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId    String    @db.ObjectId
+  trainingId    String    @db.ObjectId
+  attendance    Boolean   @default(false)
   certification String?
-  completed    Boolean  @default(false)
+  completed     Boolean   @default(false)
   completedAt   DateTime?
 
   employee Employee        @relation(fields: [employeeId], references: [id])
@@ -302,19 +434,19 @@ model TrainingRecord {
 // =======================================
 
 model SuccessionPlan {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId String  @db.ObjectId
-  readiness Int
-  comments  String?
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId         String   @db.ObjectId
+  readiness          Int
+  comments           String?
   developmentActions String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Audit fields
-  createdBy   String   @db.ObjectId
-  updatedBy   String?  @db.ObjectId
-  creator     User     @relation("SuccessionCreatedBy", fields: [createdBy], references: [id])
-  updater     User?    @relation("SuccessionUpdatedBy", fields: [updatedBy], references: [id])
+  createdBy String  @db.ObjectId
+  updatedBy String? @db.ObjectId
+  creator   User    @relation("SuccessionCreatedBy", fields: [createdBy], references: [id])
+  updater   User?   @relation("SuccessionUpdatedBy", fields: [updatedBy], references: [id])
 
   employee Employee @relation(fields: [employeeId], references: [id])
 }
@@ -324,15 +456,15 @@ model SuccessionPlan {
 // =======================================
 
 model Performance {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId  String   @db.ObjectId
-  score       Int
-  feedback    String?
-  reviewDate  DateTime @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String   @db.ObjectId
+  score      Int
+  feedback   String?
+  reviewDate DateTime @default(now())
 
   // Audit fields
-  createdBy   String   @db.ObjectId
-  createdAt   DateTime @default(now())
+  createdBy String   @db.ObjectId
+  createdAt DateTime @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id])
 }

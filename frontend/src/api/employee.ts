@@ -51,7 +51,7 @@ export const createEmployee = async (data: {
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
     if (axiosError.response) {
-      const errorMessage = axiosError.response.data.error || axiosError.response.data.message || "Failed to create employee";
+      const errorMessage = axiosError.response.data.error || "Failed to create employee";
       console.error("Create employee API error:", {
         status: axiosError.response.status,
         data: axiosError.response.data,

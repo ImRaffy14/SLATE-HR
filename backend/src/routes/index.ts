@@ -6,6 +6,7 @@ import competencyCategory from './v1/competencyCategory.routes';
 import trainingRecommendation from './v1/trainingRecommendation.routes';
 import jobRole from './v1/jobRole.routes';
 import employee from './v1/employee.routes';
+import learning from './v1/learning.routes';
 import { verifyToken } from '../middlewares/verifyToken';
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.use('/competency-category', verifyToken, competencyCategory);
 router.use('/training-recommendation', verifyToken, trainingRecommendation);
 router.use('/job-role', verifyToken, jobRole);
 router.use('/employee', verifyToken, employee);
+router.use('/learning', verifyToken, learning);
 
 
 export default router;

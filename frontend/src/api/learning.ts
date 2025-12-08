@@ -1,108 +1,268 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { ErrorResponse } from "../types";
+import axiosInstance from "@/lib/axios";
 
-const urlAPI = import.meta.env.VITE_SERVER_URL;
+const handleError = (error: unknown): never => {
+  const axiosError = error as AxiosError<ErrorResponse>;
+  if (axiosError.response) throw new Error(axiosError.response.data.error || axiosError.response.data.message);
+  else if (axiosError.request) throw new Error("Network error - no response from server");
+  else throw new Error("Request failed to be created");
+};
 
-// Courses
-export const getCourses = async () => {
+// ============================================
+// COURSE FUNCTIONS
+// ============================================
+
+export const getCourses = async (filters?: {
+  status?: string;
+  categoryId?: string;
+  competencyId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}) => {
   try {
-    const result = await axios.get(`${urlAPI}/api/v1/learning/courses`, {
-      withCredentials: true,
+    const result = await axiosInstance.get(`/api/v1/learning/courses`, {
+      params: filters,
     });
-    return result.data.courses;
+    return result.data;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
 };
 
 export const getCourseById = async (id: string) => {
   try {
-    const result = await axios.get(`${urlAPI}/api/v1/learning/courses/${id}`, {
-      withCredentials: true,
-    });
+    const result = await axiosInstance.get(`/api/v1/learning/courses/${id}`);
     return result.data.course;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
 };
 
 export const createCourse = async (data: any) => {
   try {
-    const result = await axios.post(`${urlAPI}/api/v1/learning/courses`, data, {
-      withCredentials: true,
-    });
+    const result = await axiosInstance.post(`/api/v1/learning/courses`, data);
     return result.data.course;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
 };
 
 export const updateCourse = async (id: string, data: any) => {
   try {
-    const result = await axios.put(`${urlAPI}/api/v1/learning/courses/${id}`, data, {
-      withCredentials: true,
-    });
+    const result = await axiosInstance.put(`/api/v1/learning/courses/${id}`, data);
     return result.data.course;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
 };
 
 export const deleteCourse = async (id: string) => {
   try {
-    const result = await axios.delete(`${urlAPI}/api/v1/learning/courses/${id}`);
+    const result = await axiosInstance.delete(`/api/v1/learning/courses/${id}`);
     return result.data;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
 };
 
-// Enrollments
-export const enrollEmployee = async (data:any) => {
+// ============================================
+// MATERIAL FUNCTIONS
+// ============================================
+
+export const addMaterial = async (courseId: string, data: {
+  type: string;
+  url: string;
+  title: string;
+  description?: string;
+  order?: number;
+}) => {
   try {
-    const result = await axios.post(`${urlAPI}/api/v1/learning/enrollments`, data, {
-      withCredentials: true,
+    const result = await axiosInstance.post(`/api/v1/learning/courses/${courseId}/materials`, data);
+    return result.data.material;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const uploadMaterial = async (courseId: string, file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await axiosInstance.post(`/api/v1/learning/courses/${courseId}/materials/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
-    return result.data.enrollment;
+    return result.data.material;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
 };
 
-export const updateEnrollmentStatus = async (id: string, status: string) => {
+export const updateMaterial = async (id: string, data: {
+  title?: string;
+  description?: string;
+  order?: number;
+}) => {
   try {
-    const result = await axios.put(`${urlAPI}/api/v1/learning/enrollments/${id}`, { status });
+    const result = await axiosInstance.put(`/api/v1/learning/materials/${id}`, data);
+    return result.data.material;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const deleteMaterial = async (id: string) => {
+  try {
+    const result = await axiosInstance.delete(`/api/v1/learning/materials/${id}`);
+    return result.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
+// QUIZ FUNCTIONS
+// ============================================
+
+export const createQuiz = async (courseId: string, data: {
+  title: string;
+  description?: string;
+  totalPoints: number;
+  passingScore: number;
+  timeLimit?: number;
+  allowRetake?: boolean;
+  questions: Array<{
+    question: string;
+    questionType: string;
+    points: number;
+    order?: number;
+    choices: Array<{ text: string; isCorrect: boolean }>;
+    correctAnswer: string;
+  }>;
+}) => {
+  try {
+    const result = await axiosInstance.post(`/api/v1/learning/courses/${courseId}/quizzes`, data);
+    return result.data.quiz;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getQuiz = async (id: string, enrollmentId?: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/quizzes/${id}`, {
+      params: { enrollmentId },
+    });
+    return result.data.quiz;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const updateQuiz = async (id: string, data: any) => {
+  try {
+    const result = await axiosInstance.put(`/api/v1/learning/quizzes/${id}`, data);
+    return result.data.quiz;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const deleteQuiz = async (id: string) => {
+  try {
+    const result = await axiosInstance.delete(`/api/v1/learning/quizzes/${id}`);
+    return result.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const submitQuiz = async (quizId: string, enrollmentId: string, answers: Array<{
+  questionId: string;
+  answer: string;
+}>) => {
+  try {
+    const result = await axiosInstance.post(`/api/v1/learning/quizzes/${quizId}/submit`, {
+      enrollmentId,
+      answers,
+    });
+    return result.data.attempt;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
+// ENROLLMENT FUNCTIONS
+// ============================================
+
+export const enrollEmployee = async (data: {
+  employeeId: string;
+  courseId: string;
+  isRequired?: boolean;
+}) => {
+  try {
+    const result = await axiosInstance.post(`/api/v1/learning/enrollments`, data);
     return result.data.enrollment;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
+  }
+};
+
+export const autoEnrollBasedOnGap = async (employeeId: string) => {
+  try {
+    const result = await axiosInstance.post(`/api/v1/learning/enrollments/auto-enroll`, {
+      employeeId,
+    });
+    return result.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getEmployeeEnrollments = async (employeeId: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/enrollments/employee/${employeeId}`);
+    return result.data.enrollments;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getEnrollmentDetails = async (id: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/enrollments/${id}`);
+    return result.data.enrollment || result.data.content;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const updateEnrollmentProgress = async (id: string) => {
+  try {
+    const result = await axiosInstance.patch(`/api/v1/learning/enrollments/${id}/progress`, {});
+    return result.data.enrollment;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const completeCourse = async (id: string) => {
+  try {
+    const result = await axiosInstance.patch(`/api/v1/learning/enrollments/${id}/complete`, {});
+    return result.data.enrollment;
+  } catch (error) {
+    handleError(error);
   }
 };
 
 // Feedback
 export const addFeedback = async (courseId: string, rating: number, comment?: string) => {
   try {
-    const result = await axios.post(`${urlAPI}/api/v1/learning/feedback`, { courseId, rating, comment });
+    const result = await axiosInstance.post(`/api/v1/learning/feedback`, { courseId, rating, comment });
     return result.data.feedback;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -114,7 +274,7 @@ export const addFeedback = async (courseId: string, rating: number, comment?: st
 
 export const getCourseFeedback = async (courseId: string) => {
   try {
-    const result = await axios.get(`${urlAPI}/api/v1/learning/feedback/${courseId}`);
+    const result = await axiosInstance.get(`/api/v1/learning/feedback/${courseId}`);
     return result.data.feedback;
   } catch (error) {
     const axiosError = error as AxiosError<ErrorResponse>;
@@ -126,14 +286,148 @@ export const getCourseFeedback = async (courseId: string) => {
 
 export const deleteEnrollment = async (id: string) => {
   try {
-    const result = await axios.delete(`${urlAPI}/api/v1/enrollments/${id}`, {
-      withCredentials: true,
-    });
+    const result = await axiosInstance.delete(`/api/v1/learning/enrollments/${id}`);
     return result.data;
   } catch (error) {
-    const axiosError = error as AxiosError<ErrorResponse>;
-    if (axiosError.response) throw new Error(axiosError.response.data.error);
-    else if (axiosError.request) throw new Error("Network error - no response from server");
-    else throw new Error("Request failed to be created");
+    handleError(error);
   }
-}
+};
+
+// ============================================
+// PROGRESS FUNCTIONS
+// ============================================
+
+export const getEmployeeProgress = async (employeeId: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/progress/${employeeId}`);
+    return result.data.progress;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const markMaterialComplete = async (materialId: string, enrollmentId: string, timeSpent?: number) => {
+  try {
+    const result = await axiosInstance.post(`/api/v1/learning/materials/${materialId}/complete`, {
+      enrollmentId,
+      timeSpent,
+    });
+    return result.data.progress;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getCourseContent = async (enrollmentId: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/enrollments/${enrollmentId}/content`);
+    return result.data.content;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getQuizAttempt = async (quizId: string, enrollmentId: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/quizzes/${quizId}/attempt`, {
+      params: { enrollmentId },
+    });
+    return result.data.attempt;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
+// CERTIFICATE FUNCTIONS
+// ============================================
+
+export const generateCertificate = async (enrollmentId: string) => {
+  try {
+    const result = await axiosInstance.post(`/api/v1/learning/enrollments/${enrollmentId}/certificate`, {});
+    return result.data.certificate;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getCertificate = async (enrollmentId: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/certificates/${enrollmentId}`);
+    return result.data.certificate;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
+// REPORTING FUNCTIONS
+// ============================================
+
+export const getCompletionReport = async (filters?: {
+  employeeId?: string;
+  courseId?: string;
+  department?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/reports/completion`, {
+      params: filters,
+    });
+    return result.data.report;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getLearningHoursReport = async (filters?: {
+  employeeId?: string;
+  department?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/reports/learning-hours`, {
+      params: filters,
+    });
+    return result.data.report;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getCourseAnalytics = async () => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/reports/analytics`);
+    return result.data.analytics;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+export const getRecommendedCourses = async (employeeId: string) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/recommended/${employeeId}`);
+    return result.data.courses;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
+// LEGACY FUNCTIONS (kept for backward compatibility)
+// ============================================
+
+export const updateEnrollmentStatus = async (id: string, status: string) => {
+  try {
+    const result = await axiosInstance.patch(`/api/v1/learning/enrollments/${id}/progress`, {});
+    return result.data.enrollment;
+  } catch (error) {
+    handleError(error);
+  }
+};
