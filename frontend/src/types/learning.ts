@@ -190,7 +190,7 @@ export interface CourseFeedback {
 // ============================================
 
 export interface CourseFormData {
-  courseId: string;
+  courseId?: string;
   title: string;
   description?: string;
   categoryId?: string;

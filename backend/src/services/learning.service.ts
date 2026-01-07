@@ -12,7 +12,6 @@ export class LearningService {
   // ============================================
 
   async createCourseService(data: {
-    courseId: string;
     title: string;
     description?: string;
     categoryId?: string;
@@ -27,18 +26,35 @@ export class LearningService {
       throw new AppError('Course title is required', 400);
     }
 
-    // Validate courseId is provided and not empty
-    if (!data.courseId || data.courseId.trim() === '') {
-      throw new AppError('Course ID is required', 400);
+    // Generate courseId automatically
+    const lastCourse = await prisma.course.findFirst({
+      where: {
+        courseId: {
+          startsWith: 'CRS-'
+        }
+      },
+      orderBy: {
+        courseId: 'desc'
+      }
+    });
+
+    let courseId: string;
+    if (lastCourse) {
+      const lastNumber = parseInt(lastCourse.courseId.replace('CRS-', '') || '0');
+      courseId = `CRS-${String(lastNumber + 1).padStart(6, '0')}`;
+    } else {
+      courseId = 'CRS-000001';
     }
 
-    // Validate courseId uniqueness
+    // Check for duplicate courseId (shouldn't happen with auto-generation, but check anyway)
     const existingCourse = await prisma.course.findUnique({
-      where: { courseId: data.courseId }
+      where: { courseId }
     });
 
     if (existingCourse) {
-      throw new AppError('Course ID already exists', 400);
+      // If duplicate found, generate next number
+      const lastNumber = parseInt(courseId.replace('CRS-', ''));
+      courseId = `CRS-${String(lastNumber + 1).padStart(6, '0')}`;
     }
 
     // Validate category if provided (and not empty string)
@@ -66,7 +82,7 @@ export class LearningService {
 
     return prisma.course.create({
       data: {
-        courseId: data.courseId,
+        courseId,
         title: data.title,
         description: data.description,
         categoryId: data.categoryId && data.categoryId.trim() !== '' ? data.categoryId : null,
@@ -1015,6 +1031,52 @@ export class LearningService {
     });
   }
 
+  async getAllEnrollmentsService() {
+    return prisma.enrollment.findMany({
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+            department: true,
+            position: true,
+          }
+        },
+        course: {
+          include: {
+            category: true,
+            materials: {
+              select: {
+                id: true,
+                title: true,
+              }
+            },
+            quizzes: {
+              select: {
+                id: true,
+                title: true,
+              }
+            }
+          }
+        },
+        quizAttempts: {
+          select: {
+            id: true,
+            quizId: true,
+            score: true,
+            passed: true,
+            locked: true,
+          }
+        }
+      },
+      orderBy: {
+        enrolledAt: 'desc'
+      }
+    });
+  }
+
   async getEmployeeEnrollmentsService(employeeId: string) {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId }
@@ -1094,11 +1156,21 @@ export class LearningService {
     // Calculate progress
     const progress = await this.calculateProgressService(enrollmentId);
 
+    // Determine status based on current state
+    let status = enrollment.status;
+    if (status === 'NOT_STARTED') {
+      status = 'IN_PROGRESS';
+    } else if (progress.percentage === 100 && status === 'IN_PROGRESS') {
+      status = 'COMPLETED';
+    }
+
     return prisma.enrollment.update({
       where: { id: enrollmentId },
       data: {
+        status,
         completionPercentage: progress.percentage,
         lastActivity: new Date(),
+        ...(status === 'COMPLETED' && !enrollment.completedAt && { completedAt: new Date() }),
       }
     });
   }
@@ -1192,6 +1264,33 @@ export class LearningService {
       throw new AppError('Enrollment not found', 404);
     }
 
+    // Remove correct answers from quiz questions if quiz hasn't been attempted
+    if (enrollment.course?.quizzes) {
+      enrollment.course.quizzes = enrollment.course.quizzes.map((quiz: any) => {
+        const attempt = enrollment.quizAttempts?.find((qa: any) => qa.quizId === quiz.id);
+        const isLocked = attempt?.locked || false;
+        
+        // If quiz hasn't been attempted or is not locked, remove correct answers
+        if (!attempt || !isLocked) {
+          return {
+            ...quiz,
+            questions: quiz.questions?.map((q: any) => {
+              const choices = Array.isArray(q.choices) ? q.choices : [];
+              return {
+                ...q,
+                correctAnswer: undefined,
+                choices: choices.map((c: any) => ({
+                  text: c.text,
+                  isCorrect: undefined
+                }))
+              };
+            })
+          };
+        }
+        return quiz;
+      });
+    }
+
     return enrollment;
   }
 
@@ -1246,7 +1345,10 @@ export class LearningService {
         throw new AppError(`Answer missing for question ${question.id}`, 400);
       }
 
-      const isCorrect = answer.answer === question.correctAnswer;
+      // Normalize answers for comparison (case-insensitive, trim whitespace)
+      const normalizedUserAnswer = String(answer.answer || '').trim().toLowerCase();
+      const normalizedCorrectAnswer = String(question.correctAnswer || '').trim().toLowerCase();
+      const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
       const points = isCorrect ? question.points : 0;
       totalScore += points;
       totalPoints += question.points;
@@ -1688,10 +1790,14 @@ export class LearningService {
     }
 
     const totalCompleted = filteredEnrollments.length;
-    const totalPassed = filteredEnrollments.filter(e => (e.finalGrade || 0) >= 70).length;
-    const totalFailed = totalCompleted - totalPassed;
-    const averageScore = filteredEnrollments.length > 0
-      ? filteredEnrollments.reduce((sum, e) => sum + (e.finalGrade || 0), 0) / filteredEnrollments.length
+    // Only count enrollments with valid finalGrade (not null/undefined)
+    const enrollmentsWithGrade = filteredEnrollments.filter((e): e is typeof e & { finalGrade: number } => 
+      e.finalGrade !== null && e.finalGrade !== undefined
+    );
+    const totalPassed = enrollmentsWithGrade.filter(e => e.finalGrade >= 70).length;
+    const totalFailed = enrollmentsWithGrade.filter(e => e.finalGrade < 70).length;
+    const averageScore = enrollmentsWithGrade.length > 0
+      ? enrollmentsWithGrade.reduce((sum, e) => sum + e.finalGrade, 0) / enrollmentsWithGrade.length
       : 0;
 
     return {

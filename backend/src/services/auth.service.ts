@@ -8,7 +8,7 @@ import { uploadImage } from "./imageUploadService";
 
 export class AuthService {
   async registerService(data: RegisterUser, image: any) {
-    const { name, email, password, role } = data;
+    const { name, email, password, role, employeeId } = data;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -16,6 +16,31 @@ export class AuthService {
 
     if (existingUser) {
       throw new AppError("User already exists", 400);
+    }
+
+    // If employeeId is provided, validate it exists and is not already linked
+    if (employeeId) {
+      const employee = await prisma.employee.findUnique({
+        where: { id: employeeId },
+        select: { id: true, status: true }
+      });
+
+      if (!employee) {
+        throw new AppError("Employee record not found", 400);
+      }
+
+      if (employee.status !== 'ACTIVE') {
+        throw new AppError("Employee record is not active", 400);
+      }
+
+      // Check if employee is already linked to another user
+      const existingLink = await prisma.user.findFirst({
+        where: { employeeId }
+      });
+
+      if (existingLink) {
+        throw new AppError("Employee already has a user account linked", 400);
+      }
     }
 
     if (!image) {
@@ -35,6 +60,7 @@ export class AuthService {
         email,
         password: hashedPassword,
         role: role as UserRole,
+        employeeId: employeeId || null, // Link employeeId if provided
         image: {
           imageUrl: result.url,
           publicId: result.public_id,

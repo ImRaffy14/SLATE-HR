@@ -131,6 +131,11 @@ export class LearningController {
     res.status(200).json({ status: "success", ...result });
   });
 
+  getAllEnrollments = asyncHandler(async (req: Request, res: Response) => {
+    const enrollments = await this.learningService.getAllEnrollmentsService();
+    res.status(200).json({ status: "success", enrollments });
+  });
+
   getEmployeeEnrollments = asyncHandler(async (req: Request, res: Response) => {
     const enrollments = await this.learningService.getEmployeeEnrollmentsService(req.params.employeeId);
     res.status(200).json({ status: "success", enrollments });

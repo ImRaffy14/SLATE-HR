@@ -8,6 +8,7 @@ export interface RegisterUser {
     email: string;
     password: string;
     role: string;
+    employeeId?: string; // Optional: link to Employee record
     image: Image;
 }
 

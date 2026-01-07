@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Users, UserCheck, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban } from "lucide-react"
+import { Users, UserCheck, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban, Briefcase, Target, Award, Bell, GraduationCap } from "lucide-react"
 import { NavLink, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import toast from "react-hot-toast"
@@ -14,8 +14,10 @@ function Sidebar() {
   const { user, logout: logoutFromContext } = useAuth()
 
   const isAdmin = user?.role?.includes("ADMIN")
+  const isEmployee = user?.role === "EMPLOYEE"
 
-  const baseMenuItems = [{ id: "dashboard", path: "/", icon: <BarChart3 size={20} />, label: "Dashboard" }]
+  // Dashboard only for non-employees (admin/HR/managers)
+  const baseMenuItems = isEmployee ? [] : [{ id: "dashboard", path: "/", icon: <BarChart3 size={20} />, label: "Dashboard" }]
 
   const adminMenuItems = [
     { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
@@ -35,7 +37,20 @@ function Sidebar() {
     { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
   ]
 
-  const menuItems = [...baseMenuItems, ...(isAdmin ? adminMenuItems : userMenuItems)]
+  // ESS submodules in sidebar for employees
+  const employeeMenuItems = [
+    { id: "ess-dashboard", path: "/ess", icon: <BarChart3 size={20} />, label: "Dashboard" },
+    { id: "ess-career-path", path: "/ess/career-path", icon: <Target size={20} />, label: "Career Path" },
+    { id: "ess-learning", path: "/ess/learning", icon: <BookPlus size={20} />, label: "Learning" },
+    { id: "ess-trainings", path: "/ess/trainings", icon: <GraduationCap size={20} />, label: "Trainings" },
+    { id: "ess-achievements", path: "/ess/achievements", icon: <Award size={20} />, label: "Achievements" },
+    { id: "ess-notifications", path: "/ess/notifications", icon: <Bell size={20} />, label: "Notifications" },
+  ]
+
+  const menuItems = [
+    ...baseMenuItems,
+    ...(isEmployee ? employeeMenuItems : isAdmin ? adminMenuItems : userMenuItems)
+  ]
 
   const handleLogout = async () => {
     try {

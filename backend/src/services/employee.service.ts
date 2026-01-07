@@ -8,9 +8,9 @@ export class EmployeeService {
         jobRole: true,
         competencies: true,
         enrollments: true,
-        trainings: true,
         performance: true,
         succession: true,
+        trainingEnrollments: true,
       },
     });
   }
@@ -22,31 +22,53 @@ export class EmployeeService {
         jobRole: true,
         competencies: true,
         enrollments: true,
-        trainings: true,
         performance: true,
         succession: true,
+        trainingEnrollments: true,
       },
     });
   }
 
   async createEmployeeService(data: any) {
     // Validate required fields
-    if (!data.employeeId || !data.name) {
-      throw new AppError("Employee ID and name are required", 400);
+    if (!data.name) {
+      throw new AppError("Name is required", 400);
     }
 
-    // Check for duplicate employeeId
+    // Generate employeeId automatically
+    const lastEmployee = await prisma.employee.findFirst({
+      where: {
+        employeeId: {
+          startsWith: 'EMP-'
+        }
+      },
+      orderBy: {
+        employeeId: 'desc'
+      }
+    });
+
+    let employeeId: string;
+    if (lastEmployee) {
+      const lastNumber = parseInt(lastEmployee.employeeId.replace('EMP-', '') || '0');
+      employeeId = `EMP-${String(lastNumber + 1).padStart(6, '0')}`;
+    } else {
+      employeeId = 'EMP-000001';
+    }
+
+    // Check for duplicate employeeId (shouldn't happen with auto-generation, but check anyway)
     const existingEmployee = await prisma.employee.findUnique({
-      where: { employeeId: data.employeeId }
+      where: { employeeId }
     });
 
     if (existingEmployee) {
-      throw new AppError(`Employee with ID ${data.employeeId} already exists`, 400);
+      // If duplicate found, generate next number
+      const lastNumber = parseInt(employeeId.replace('EMP-', ''));
+      employeeId = `EMP-${String(lastNumber + 1).padStart(6, '0')}`;
     }
 
     // Clean up data - remove empty strings and invalid positionId
     const cleanData: any = {
-      employeeId: data.employeeId.trim(),
+      employeeId,
       name: data.name.trim(),
       status: data.status || "ACTIVE",
     };

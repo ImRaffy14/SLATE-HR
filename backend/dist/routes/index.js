@@ -1,0 +1,36 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const account_routes_1 = __importDefault(require("./v1/account.routes"));
+const auth_routes_1 = __importDefault(require("./v1/auth.routes"));
+const competency_routes_1 = __importDefault(require("./v1/competency.routes"));
+const competencyCategory_routes_1 = __importDefault(require("./v1/competencyCategory.routes"));
+const trainingRecommendation_routes_1 = __importDefault(require("./v1/trainingRecommendation.routes"));
+const jobRole_routes_1 = __importDefault(require("./v1/jobRole.routes"));
+const employee_routes_1 = __importDefault(require("./v1/employee.routes"));
+const learning_routes_1 = __importDefault(require("./v1/learning.routes"));
+const training_routes_1 = __importDefault(require("./v1/training.routes"));
+const training_enrollment_routes_1 = __importDefault(require("./v1/training-enrollment.routes"));
+const training_attendance_routes_1 = __importDefault(require("./v1/training-attendance.routes"));
+const training_evaluation_routes_1 = __importDefault(require("./v1/training-evaluation.routes"));
+const training_reports_routes_1 = __importDefault(require("./v1/training-reports.routes"));
+const verifyToken_1 = require("../middlewares/verifyToken");
+const router = express_1.default.Router();
+// V1 Routes
+router.use('/users', account_routes_1.default);
+router.use('/auth', auth_routes_1.default);
+router.use('/competency', verifyToken_1.verifyToken, competency_routes_1.default);
+router.use('/competency-category', verifyToken_1.verifyToken, competencyCategory_routes_1.default);
+router.use('/training-recommendation', verifyToken_1.verifyToken, trainingRecommendation_routes_1.default);
+router.use('/job-role', verifyToken_1.verifyToken, jobRole_routes_1.default);
+router.use('/employee', verifyToken_1.verifyToken, employee_routes_1.default);
+router.use('/learning', verifyToken_1.verifyToken, learning_routes_1.default);
+router.use('/trainings', verifyToken_1.verifyToken, training_routes_1.default);
+router.use('/', verifyToken_1.verifyToken, training_enrollment_routes_1.default);
+router.use('/', verifyToken_1.verifyToken, training_attendance_routes_1.default);
+router.use('/', verifyToken_1.verifyToken, training_evaluation_routes_1.default);
+router.use('/', verifyToken_1.verifyToken, training_reports_routes_1.default);
+exports.default = router;

@@ -77,7 +77,6 @@ export default function EmployeeManagement() {
 
   // Form data
   const [employeeFormData, setEmployeeFormData] = useState({
-    employeeId: "",
     name: "",
     email: "",
     department: "",
@@ -185,7 +184,6 @@ export default function EmployeeManagement() {
   // Helper functions
   const resetEmployeeForm = () => {
     setEmployeeFormData({
-      employeeId: "",
       name: "",
       email: "",
       department: "",
@@ -223,7 +221,6 @@ export default function EmployeeManagement() {
   const handleEditEmployeeClick = (employee: Employee) => {
     setSelectedEmployee(employee)
     setEmployeeFormData({
-      employeeId: employee.employeeId,
       name: employee.name,
       email: employee.email || "",
       department: employee.department || "",
@@ -246,14 +243,13 @@ export default function EmployeeManagement() {
   }
 
   const handleSubmitEmployee = () => {
-    if (!employeeFormData.employeeId.trim() || !employeeFormData.name.trim()) {
-      toast.error("Employee ID and name are required")
+    if (!employeeFormData.name.trim()) {
+      toast.error("Name is required")
       return
     }
 
     // Prepare data, removing empty strings and converting to proper types
     const data: any = {
-      employeeId: employeeFormData.employeeId.trim(),
       name: employeeFormData.name.trim(),
       status: employeeFormData.status,
     }
@@ -582,16 +578,6 @@ export default function EmployeeManagement() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Employee ID *</Label>
-              <Input
-                value={employeeFormData.employeeId}
-                onChange={(e) =>
-                  setEmployeeFormData({ ...employeeFormData, employeeId: e.target.value })
-                }
-                placeholder="e.g., EMP001"
-              />
-            </div>
             <div className="space-y-2">
               <Label>Name *</Label>
               <Input

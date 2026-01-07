@@ -18,8 +18,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useQuery } from "@tanstack/react-query"
 import { getUsers } from "../api/accounts"
+import { getEmployees } from "@/api/employee"
 import type { User } from "../types"
 import { useCreateAccount } from "@/hooks/auth/useCreateAccount"
 import { useEditUser, useEditUserPassword, useDeleteUser } from "@/hooks/useUserManagement"
@@ -38,12 +40,19 @@ const UserManagement = () => {
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [activeAccountTab, setActiveAccountTab] = useState<"admin" | "employee">("admin")
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("")
+  const [employeeSelectSearchTerm, setEmployeeSelectSearchTerm] = useState("")
 
   const [newUser, setNewUser] = useState<NewUser>({
     name: "",
     email: "",
     password: "",
     role: "USER",
+  })
+
+  const [newEmployeeUser, setNewEmployeeUser] = useState({
+    password: "",
   })
 
   const [editUser, setEditUser] = useState({
@@ -57,9 +66,12 @@ const UserManagement = () => {
     confirmPassword: "",
   })
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRole, setSelectedRole] = useState("All")
-  const [currentPage, setCurrentPage] = useState(1)
+  const [activeMainTab, setActiveMainTab] = useState<"admin" | "employee">("admin")
+  const [adminSearchTerm, setAdminSearchTerm] = useState("")
+  const [adminSelectedRole, setAdminSelectedRole] = useState("All")
+  const [adminCurrentPage, setAdminCurrentPage] = useState(1)
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState("")
+  const [employeeCurrentPage, setEmployeeCurrentPage] = useState(1)
   const usersPerPage = 5
 
   const {
@@ -73,33 +85,109 @@ const UserManagement = () => {
     gcTime: 300000,
   })
 
+  const { data: employees = [], isLoading: isEmployeesLoading } = useQuery({
+    queryKey: ["employees"],
+    queryFn: getEmployees,
+  })
+
   const { mutate: createAccount, isPending: isCreating } = useCreateAccount()
 
+  // Filter employees based on search term and exclude those already linked to users
+  const availableEmployees = employees.filter((emp: any) => {
+    const searchMatch = 
+      emp.name?.toLowerCase().includes(employeeSelectSearchTerm.toLowerCase()) ||
+      emp.email?.toLowerCase().includes(employeeSelectSearchTerm.toLowerCase()) ||
+      emp.employeeId?.toLowerCase().includes(employeeSelectSearchTerm.toLowerCase())
+    
+    // Check if employee is already linked to a user
+    const isLinked = usersData?.some(user => user.employeeId === emp.id)
+    
+    return searchMatch && !isLinked && emp.status === "ACTIVE"
+  })
+
+  const selectedEmployee = employees.find((emp: any) => emp.id === selectedEmployeeId)
+
+  // Filter admin/users (non-employee accounts)
+  const adminUsers = (usersData || []).filter(user => 
+    !user.employeeId && (user.role === "ADMIN" || user.role === "USER" || user.role === "HR" || user.role === "MANAGER")
+  )
+
+  // Filter employee accounts (has employeeId or role is EMPLOYEE)
+  const employeeUsers = (usersData || []).filter(user => 
+    user.employeeId || user.role === "EMPLOYEE"
+  )
+
+  // Process admin users
   const {
-    processedItems: currentUsers,
-    totalItems,
-    totalPages,
-  } = processItems<User>(usersData || [], {
-    searchTerm,
+    processedItems: currentAdminUsers,
+    totalItems: totalAdminItems,
+    totalPages: totalAdminPages,
+  } = processItems<User>(adminUsers, {
+    searchTerm: adminSearchTerm,
     searchKeys: ["name", "email"],
     filterKey: "role",
-    filterValue: selectedRole === "All" ? undefined : selectedRole,
+    filterValue: adminSelectedRole === "All" ? undefined : adminSelectedRole,
     allOptionValue: "All",
-    currentPage,
+    currentPage: adminCurrentPage,
+    itemsPerPage: usersPerPage,
+  })
+
+  // Process employee users
+  const {
+    processedItems: currentEmployeeUsers,
+    totalItems: totalEmployeeItems,
+    totalPages: totalEmployeePages,
+  } = processItems<User>(employeeUsers, {
+    searchTerm: employeeSearchTerm,
+    searchKeys: ["name", "email"],
+    filterKey: undefined,
+    filterValue: undefined,
+    allOptionValue: undefined,
+    currentPage: employeeCurrentPage,
     itemsPerPage: usersPerPage,
   })
 
   const handleAddUser = () => {
     const avatarFile = croppedImage ? base64ToFile(croppedImage, "profile.png") : null
 
-    const formData = new FormData()
-    if (avatarFile) {
-      formData.append("image", avatarFile)
+    if (!avatarFile) {
+      toast.error("Please upload a profile picture")
+      return
     }
 
-    Object.entries(newUser).forEach(([key, value]) => {
-      formData.append(key, value)
-    })
+    const formData = new FormData()
+    formData.append("image", avatarFile)
+
+    if (activeAccountTab === "admin") {
+      // Admin account creation
+      Object.entries(newUser).forEach(([key, value]) => {
+        formData.append(key, value)
+      })
+    } else {
+      // Employee account creation
+      if (!selectedEmployeeId) {
+        toast.error("Please select an employee")
+        return
+      }
+
+      if (!selectedEmployee) {
+        toast.error("Selected employee not found")
+        return
+      }
+
+      // Check if employee already has an account
+      const existingLink = usersData?.find(user => user.employeeId === selectedEmployeeId)
+      if (existingLink) {
+        toast.error("This employee already has a user account")
+        return
+      }
+
+      formData.append("name", selectedEmployee.name)
+      formData.append("email", selectedEmployee.email || "")
+      formData.append("password", newEmployeeUser.password)
+      formData.append("role", "EMPLOYEE")
+      formData.append("employeeId", selectedEmployeeId)
+    }
 
     createAccount(formData, {
       onSuccess: () => {
@@ -210,6 +298,9 @@ const UserManagement = () => {
       password: "",
       role: "USER",
     })
+    setNewEmployeeUser({
+      password: "",
+    })
     setEditUser({
       name: "",
       email: "",
@@ -221,6 +312,9 @@ const UserManagement = () => {
     })
     setImageSrc(null)
     setCroppedImage(null)
+    setSelectedEmployeeId("")
+    setEmployeeSelectSearchTerm("")
+    setActiveAccountTab("admin")
   }
 
   const openEditModal = (user: User) => {
@@ -248,7 +342,7 @@ const UserManagement = () => {
     setIsConfirmationOpen(true)
   }
 
-  const roles = ["All", "ADMIN", "USER"]
+  const adminRoles = ["All", "ADMIN", "USER", "HR", "MANAGER"]
 
   // Avatar cropping state
   const [imageSrc, setImageSrc] = useState<string | null>(null)
@@ -285,8 +379,12 @@ const UserManagement = () => {
   }
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, selectedRole])
+    setAdminCurrentPage(1)
+  }, [adminSearchTerm, adminSelectedRole])
+
+  useEffect(() => {
+    setEmployeeCurrentPage(1)
+  }, [employeeSearchTerm])
 
   if (isLoading) {
     return <FullPageLoader message={"Fetching Users Data"} showLogo={true} />
@@ -306,167 +404,336 @@ const UserManagement = () => {
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card className="bg-white border-2 border-gray-200 shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-gray-900 text-lg">Filters</CardTitle>
-          <CardDescription className="text-gray-600">Narrow down user list</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search users..."
-                className="pl-9 bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+      {/* Main Tabs for Admin and Employee Accounts */}
+      <Tabs value={activeMainTab} onValueChange={(value) => setActiveMainTab(value as "admin" | "employee")} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 p-1">
+          <TabsTrigger
+            value="admin"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-gray-700 data-[state=active]:text-gray-900"
+          >
+            Admin Accounts
+          </TabsTrigger>
+          <TabsTrigger
+            value="employee"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-gray-700 data-[state=active]:text-gray-900"
+          >
+            Employee Accounts
+          </TabsTrigger>
+        </TabsList>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+        {/* Admin Accounts Tab */}
+        <TabsContent value="admin" className="space-y-6">
+          {/* Filters */}
+          <Card className="bg-white border-2 border-gray-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-gray-900 text-lg">Filters</CardTitle>
+              <CardDescription className="text-gray-600">Narrow down admin/user list</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search admin/users..."
+                    className="pl-9 bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
+                    value={adminSearchTerm}
+                    onChange={(e) => setAdminSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="justify-start gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
+                    >
+                      <Filter size={16} />
+                      Role: {adminSelectedRole}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-white border-2 border-gray-200 shadow-lg">
+                    {adminRoles.map((role) => (
+                      <DropdownMenuItem
+                        key={role}
+                        onClick={() => setAdminSelectedRole(role)}
+                        className="text-gray-900 hover:bg-gray-50"
+                      >
+                        {role}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button
                   variant="outline"
-                  className="justify-start gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
+                  className="gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
+                  onClick={() => {
+                    setAdminSearchTerm("")
+                    setAdminSelectedRole("All")
+                  }}
                 >
-                  <Filter size={16} />
-                  Role: {selectedRole}
+                  Reset Filters
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-2 border-gray-200 shadow-lg">
-                {roles.map((role) => (
-                  <DropdownMenuItem
-                    key={role}
-                    onClick={() => setSelectedRole(role)}
-                    className="text-gray-900 hover:bg-gray-50"
-                  >
-                    {role}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Button
-              variant="outline"
-              className="gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
-              onClick={() => {
-                setSearchTerm("")
-                setSelectedRole("All")
-              }}
-            >
-              Reset Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Admin Users Table */}
+          <Card className="bg-white border-2 border-gray-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-gray-900 text-lg">Admin/User Accounts</CardTitle>
+                  <CardDescription className="text-gray-600">{totalAdminItems} admin/users found</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-200">
+                    <TableHead className="text-gray-700 font-semibold">User</TableHead>
+                    <TableHead className="text-gray-700 font-semibold">Role</TableHead>
+                    <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentAdminUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                        No admin/user accounts found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    currentAdminUsers.map((user) => (
+                      <TableRow key={user.id} className="border-gray-200 hover:bg-gray-50">
+                        <TableCell className="py-4">
+                          <div className="flex items-center gap-4">
+                            <Avatar className="w-12 h-12 ring-2 ring-gray-100">
+                              <AvatarImage src={user.image.imageUrl || "/placeholder.svg"} alt="avatar" />
+                              <AvatarFallback className="bg-gray-100 text-gray-700 font-medium">
+                                {user.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-900">{user.name}</div>
+                              <div className="text-sm text-gray-600">{user.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.role === "ADMIN" ? "default" : user.role === "USER" ? "secondary" : "outline"}
+                            className={
+                              user.role === "ADMIN"
+                                ? "bg-gray-900 text-white hover:bg-gray-800"
+                                : user.role === "USER"
+                                  ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                  : ""
+                            }
+                          >
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                              >
+                                <MoreVertical size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white border-2 border-gray-200 shadow-lg">
+                              <DropdownMenuItem
+                                className="gap-2 text-gray-900 hover:bg-gray-50"
+                                onClick={() => openViewModal(user)}
+                              >
+                                <Eye size={16} />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-gray-900 hover:bg-gray-50"
+                                onClick={() => openEditModal(user)}
+                              >
+                                <Edit size={16} />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-gray-900 hover:bg-gray-50"
+                                onClick={() => openChangePasswordModal(user)}
+                              >
+                                <Key size={16} />
+                                Change Password
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-red-600 hover:bg-red-50"
+                                onClick={() => openConfirmationModal(user)}
+                              >
+                                <Trash2 size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter className="flex justify-between border-t-2 border-gray-200 pt-6">
+              <div className="text-sm text-gray-600">
+                Showing {Math.min((adminCurrentPage - 1) * usersPerPage + 1, totalAdminItems)} to{" "}
+                {Math.min(adminCurrentPage * usersPerPage, totalAdminItems)} of {totalAdminItems} admin/users
+              </div>
+              <PaginationControls currentPage={adminCurrentPage} totalPages={totalAdminPages} onPageChange={setAdminCurrentPage} />
+            </CardFooter>
+          </Card>
+        </TabsContent>
 
-      {/* Users Table */}
-      <Card className="bg-white border-2 border-gray-200 shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-gray-900 text-lg">Users</CardTitle>
-              <CardDescription className="text-gray-600">{totalItems} users found</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-200">
-                <TableHead className="text-gray-700 font-semibold">User</TableHead>
-                <TableHead className="text-gray-700 font-semibold">Role</TableHead>
-                <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentUsers.map((user) => (
-                <TableRow key={user.id} className="border-gray-200 hover:bg-gray-50">
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12 ring-2 ring-gray-100">
-                        <AvatarImage src={user.image.imageUrl || "/placeholder.svg"} alt="avatar" />
-                        <AvatarFallback className="bg-gray-100 text-gray-700 font-medium">
-                          {user.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-600">{user.email}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.role === "ADMIN" ? "default" : user.role === "USER" ? "secondary" : "outline"}
-                      className={
-                        user.role === "ADMIN"
-                          ? "bg-gray-900 text-white hover:bg-gray-800"
-                          : user.role === "USER"
-                            ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            : ""
-                      }
-                    >
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                        >
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-white border-2 border-gray-200 shadow-lg">
-                        <DropdownMenuItem
-                          className="gap-2 text-gray-900 hover:bg-gray-50"
-                          onClick={() => openViewModal(user)}
-                        >
-                          <Eye size={16} />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-gray-900 hover:bg-gray-50"
-                          onClick={() => openEditModal(user)}
-                        >
-                          <Edit size={16} />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-gray-900 hover:bg-gray-50"
-                          onClick={() => openChangePasswordModal(user)}
-                        >
-                          <Key size={16} />
-                          Change Password
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-red-600 hover:bg-red-50"
-                          onClick={() => openConfirmationModal(user)}
-                        >
-                          <Trash2 size={16} />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-        <CardFooter className="flex justify-between border-t-2 border-gray-200 pt-6">
-          <div className="text-sm text-gray-600">
-            Showing {Math.min((currentPage - 1) * usersPerPage + 1, totalItems)} to{" "}
-            {Math.min(currentPage * usersPerPage, totalItems)} of {totalItems} users
-          </div>
-          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-        </CardFooter>
-      </Card>
+        {/* Employee Accounts Tab */}
+        <TabsContent value="employee" className="space-y-6">
+          {/* Filters */}
+          <Card className="bg-white border-2 border-gray-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-gray-900 text-lg">Filters</CardTitle>
+              <CardDescription className="text-gray-600">Narrow down employee account list</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search employee accounts..."
+                    className="pl-9 bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
+                    value={employeeSearchTerm}
+                    onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="gap-2 border-2 border-gray-200 text-gray-900 bg-white hover:bg-gray-50"
+                  onClick={() => {
+                    setEmployeeSearchTerm("")
+                  }}
+                >
+                  Reset Filters
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Employee Users Table */}
+          <Card className="bg-white border-2 border-gray-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-gray-900 text-lg">Employee Accounts</CardTitle>
+                  <CardDescription className="text-gray-600">{totalEmployeeItems} employee accounts found</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-200">
+                    <TableHead className="text-gray-700 font-semibold">User</TableHead>
+                    <TableHead className="text-gray-700 font-semibold">Role</TableHead>
+                    <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentEmployeeUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                        No employee accounts found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    currentEmployeeUsers.map((user) => (
+                      <TableRow key={user.id} className="border-gray-200 hover:bg-gray-50">
+                        <TableCell className="py-4">
+                          <div className="flex items-center gap-4">
+                            <Avatar className="w-12 h-12 ring-2 ring-gray-100">
+                              <AvatarImage src={user.image.imageUrl || "/placeholder.svg"} alt="avatar" />
+                              <AvatarFallback className="bg-gray-100 text-gray-700 font-medium">
+                                {user.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-900">{user.name}</div>
+                              <div className="text-sm text-gray-600">{user.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                            EMPLOYEE
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                              >
+                                <MoreVertical size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white border-2 border-gray-200 shadow-lg">
+                              <DropdownMenuItem
+                                className="gap-2 text-gray-900 hover:bg-gray-50"
+                                onClick={() => openViewModal(user)}
+                              >
+                                <Eye size={16} />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-gray-900 hover:bg-gray-50"
+                                onClick={() => openEditModal(user)}
+                              >
+                                <Edit size={16} />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-gray-900 hover:bg-gray-50"
+                                onClick={() => openChangePasswordModal(user)}
+                              >
+                                <Key size={16} />
+                                Change Password
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="gap-2 text-red-600 hover:bg-red-50"
+                                onClick={() => openConfirmationModal(user)}
+                              >
+                                <Trash2 size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter className="flex justify-between border-t-2 border-gray-200 pt-6">
+              <div className="text-sm text-gray-600">
+                Showing {Math.min((employeeCurrentPage - 1) * usersPerPage + 1, totalEmployeeItems)} to{" "}
+                {Math.min(employeeCurrentPage * usersPerPage, totalEmployeeItems)} of {totalEmployeeItems} employee accounts
+              </div>
+              <PaginationControls currentPage={employeeCurrentPage} totalPages={totalEmployeePages} onPageChange={setEmployeeCurrentPage} />
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add User Modal */}
       <Dialog
@@ -490,13 +757,30 @@ const UserManagement = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleAddUser()
-            }}
-          >
-            <div className="grid gap-6 py-4">
+          <Tabs value={activeAccountTab} onValueChange={(value) => setActiveAccountTab(value as "admin" | "employee")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 p-1">
+              <TabsTrigger
+                value="admin"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-gray-700 data-[state=active]:text-gray-900"
+              >
+                Add Admin Account
+              </TabsTrigger>
+              <TabsTrigger
+                value="employee"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-gray-700 data-[state=active]:text-gray-900"
+              >
+                Add Employee Account
+              </TabsTrigger>
+            </TabsList>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleAddUser()
+              }}
+            >
+              <TabsContent value="admin" className="mt-4 space-y-4">
+                <div className="grid gap-6 py-4">
               {/* Avatar Upload */}
               <div className="space-y-3">
                 <Label htmlFor="avatar" className="text-gray-700 font-medium">
@@ -629,7 +913,148 @@ const UserManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+                </div>
+              </TabsContent>
+
+              {/* Employee Account Tab */}
+              <TabsContent value="employee" className="mt-4 space-y-4">
+                <div className="grid gap-6 py-4">
+                  {/* Avatar Upload */}
+                  <div className="space-y-3">
+                    <Label htmlFor="employee-avatar" className="text-gray-700 font-medium">
+                      Profile Picture
+                    </Label>
+                    <div className="flex items-center gap-6">
+                      <Avatar className="h-20 w-20 ring-2 ring-gray-200">
+                        {croppedImage ? (
+                          <AvatarImage src={croppedImage || "/placeholder.svg"} />
+                        ) : (
+                          <AvatarFallback className="bg-gray-100 text-gray-600">
+                            <ImageIcon size={28} className="text-gray-400" />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="space-y-3">
+                        <Input id="employee-avatar" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                        <Label
+                          htmlFor="employee-avatar"
+                          className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <ImageIcon size={16} />
+                          {croppedImage ? "Change" : "Upload"} Image
+                        </Label>
+                        {croppedImage && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCroppedImage(null)}
+                            type="button"
+                            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                          >
+                            <X size={16} className="mr-1" />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Image Cropper */}
+                  {imageSrc && !croppedImage && (
+                    <div className="space-y-3">
+                      <Label className="text-gray-700 font-medium">Crop Image</Label>
+                      <div className="h-64 border-2 border-gray-200 rounded-lg overflow-hidden">
+                        <Cropper
+                          src={imageSrc}
+                          style={{ height: 256, width: "100%" }}
+                          initialAspectRatio={1}
+                          guides={true}
+                          ref={cropperRef}
+                        />
+                      </div>
+                      <Button onClick={getCropData} className="mt-3 bg-gray-900 hover:bg-gray-800 text-white" type="button">
+                        Crop Image
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Employee Search and Selection */}
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-select-search" className="text-gray-700 font-medium">
+                      Search Employee <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="employee-select-search"
+                        placeholder="Search by name, email, or employee ID..."
+                        className="pl-9 bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
+                        value={employeeSelectSearchTerm}
+                        onChange={(e) => setEmployeeSelectSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Employee Dropdown */}
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-select" className="text-gray-700 font-medium">
+                      Select Employee <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={selectedEmployeeId}
+                      onValueChange={setSelectedEmployeeId}
+                      required
+                    >
+                      <SelectTrigger id="employee-select" className="w-full bg-white border-2 border-gray-200 text-gray-900">
+                        <SelectValue placeholder="Select an employee" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-[300px]">
+                        {availableEmployees.length === 0 ? (
+                          <div className="p-4 text-sm text-gray-500 text-center">
+                            {employeeSelectSearchTerm ? "No employees found matching your search" : "No available employees"}
+                          </div>
+                        ) : (
+                          availableEmployees.map((emp: any) => (
+                            <SelectItem key={emp.id} value={emp.id} className="text-gray-900 hover:bg-gray-50">
+                              <div className="flex flex-col">
+                                <span className="font-medium">{emp.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {emp.email || "No email"} • {emp.employeeId} • {emp.department || "No department"}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {selectedEmployee && (
+                      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                        <p className="text-sm font-medium text-gray-900">Selected Employee:</p>
+                        <p className="text-sm text-gray-700">{selectedEmployee.name}</p>
+                        <p className="text-xs text-gray-500">{selectedEmployee.email || "No email"}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-password" className="text-gray-700 font-medium">
+                      Password <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="employee-password"
+                      type="password"
+                      value={newEmployeeUser.password}
+                      onChange={(e) => setNewEmployeeUser({ ...newEmployeeUser, password: e.target.value })}
+                      placeholder="••••••••"
+                      required
+                      minLength={8}
+                      className="bg-white border-2 border-gray-200 focus:border-gray-400 text-gray-900 placeholder:text-gray-500"
+                    />
+                    <p className="text-xs text-gray-500">Role will be automatically set to EMPLOYEE</p>
+                  </div>
+                </div>
+              </TabsContent>
 
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <Button
@@ -645,10 +1070,11 @@ const UserManagement = () => {
               </Button>
               <Button disabled={isCreating} type="submit" className="bg-gray-900 hover:bg-gray-800 text-white">
                 {isCreating && <Loader2 className="animate-spin mr-2" />}
-                Add User
+                {activeAccountTab === "admin" ? "Add Admin Account" : "Add Employee Account"}
               </Button>
             </div>
           </form>
+          </Tabs>
         </DialogContent>
       </Dialog>
 

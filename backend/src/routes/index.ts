@@ -7,6 +7,12 @@ import trainingRecommendation from './v1/trainingRecommendation.routes';
 import jobRole from './v1/jobRole.routes';
 import employee from './v1/employee.routes';
 import learning from './v1/learning.routes';
+import training from './v1/training.routes';
+import trainingEnrollment from './v1/training-enrollment.routes';
+import trainingAttendance from './v1/training-attendance.routes';
+import trainingEvaluation from './v1/training-evaluation.routes';
+import trainingReports from './v1/training-reports.routes';
+import ess from '../modules/ess/routes/ess.routes';
 import { verifyToken } from '../middlewares/verifyToken';
 
 const router = express.Router();
@@ -20,6 +26,12 @@ router.use('/training-recommendation', verifyToken, trainingRecommendation);
 router.use('/job-role', verifyToken, jobRole);
 router.use('/employee', verifyToken, employee);
 router.use('/learning', verifyToken, learning);
+router.use('/trainings', verifyToken, training);
+router.use('/training-enrollment', verifyToken, trainingEnrollment);
+router.use('/training-attendance', verifyToken, trainingAttendance);
+router.use('/training-evaluation', verifyToken, trainingEvaluation);
+router.use('/reports', verifyToken, trainingReports);
+router.use('/ess', verifyToken, ess);
 
 
 export default router;

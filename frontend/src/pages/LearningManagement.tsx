@@ -58,6 +58,7 @@ import {
   deleteQuiz,
   submitQuiz,
   enrollEmployee,
+  getAllEnrollments,
   getEmployeeEnrollments,
   getEnrollmentDetails,
   updateEnrollmentProgress,
@@ -124,7 +125,6 @@ export default function LearningManagement() {
 
   // Form data
   const [courseFormData, setCourseFormData] = useState<CourseFormData>({
-    courseId: "",
     title: "",
     description: "",
     categoryId: "",
@@ -188,6 +188,14 @@ export default function LearningManagement() {
   const { data: employees = [] } = useQuery({
     queryKey: ["employees"],
     queryFn: getEmployees,
+  })
+
+  // Fetch all enrollments for Content Delivery tab
+  const { data: allEnrollmentsData, isLoading: isAllEnrollmentsLoading } = useQuery({
+    queryKey: ["all-enrollments"],
+    queryFn: getAllEnrollments,
+    enabled: activeTab === "content",
+    refetchOnMount: true, // Refetch when component mounts or tab is switched
   })
 
   const { data: selectedCourseData } = useQuery({
@@ -352,7 +360,6 @@ export default function LearningManagement() {
   // Helper functions
   const resetCourseForm = () => {
     setCourseFormData({
-      courseId: "",
       title: "",
       description: "",
       categoryId: "",
@@ -399,7 +406,6 @@ export default function LearningManagement() {
   const handleEditCourseClick = (course: Course) => {
     setSelectedCourse(course)
     setCourseFormData({
-      courseId: course.courseId,
       title: course.title,
       description: course.description || "",
       categoryId: course.categoryId || "",
@@ -427,10 +433,6 @@ export default function LearningManagement() {
       toast.error("Course title is required")
       return
     }
-    if (!courseFormData.courseId.trim()) {
-      toast.error("Course ID is required")
-      return
-    }
     if (courseFormData.duration <= 0) {
       toast.error("Duration must be greater than 0")
       return
@@ -456,8 +458,10 @@ export default function LearningManagement() {
     }
 
     // Clean up categoryId - convert empty string to undefined
+    // Remove courseId from data since it's auto-generated (only for create, not update)
+    const { courseId, ...courseDataWithoutId } = courseFormData;
     const cleanedData = {
-      ...courseFormData,
+      ...courseDataWithoutId,
       categoryId: courseFormData.categoryId && courseFormData.categoryId.trim() !== "" 
         ? courseFormData.categoryId 
         : undefined,
@@ -474,7 +478,6 @@ export default function LearningManagement() {
   // Don't set state during render - only check validation
   const canCreateCourse = () => {
     if (!courseFormData.title.trim()) return false
-    if (!courseFormData.courseId.trim()) return false
     if (courseFormData.duration <= 0) return false
     if (courseFormData.estimatedHours <= 0) return false
     
@@ -1103,24 +1106,12 @@ export default function LearningManagement() {
               <CardDescription>View course content, take quizzes, and track progress</CardDescription>
             </CardHeader>
             <CardContent>
-              {(() => {
-                // Get all enrollments from all employees
-                const allEnrollments: any[] = []
-                employees.forEach((employee: any) => {
-                  if (employee.enrollments && employee.enrollments.length > 0) {
-                    employee.enrollments.forEach((enrollment: any) => {
-                      allEnrollments.push({
-                        ...enrollment,
-                        employee: {
-                          id: employee.id,
-                          name: employee.name,
-                          email: employee.email,
-                          employeeId: employee.employeeId,
-                        }
-                      })
-                    })
-                  }
-                })
+              {isAllEnrollmentsLoading ? (
+                <div className="text-center py-8">
+                  <FullPageLoader message="Loading enrollments..." showLogo={false} />
+                </div>
+              ) : (() => {
+                const allEnrollments = allEnrollmentsData || []
 
                 if (allEnrollments.length === 0) {
                   return (
@@ -1326,14 +1317,6 @@ export default function LearningManagement() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Course ID *</Label>
-                <Input
-                  value={courseFormData.courseId}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, courseId: e.target.value })}
-                  placeholder="e.g., COURSE-001"
-                />
-              </div>
               <div className="space-y-2">
                 <Label>Course Title *</Label>
                 <Input

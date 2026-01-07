@@ -59,6 +59,33 @@ enum EmployeeStatus {
   INACTIVE
 }
 
+enum TrainingType {
+  ONLINE
+  ONSITE
+  HYBRID
+}
+
+enum TrainingStatus {
+  DRAFT
+  OPEN
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingEnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+}
+
 // =======================================
 // JOB ROLES
 // =======================================
@@ -79,14 +106,18 @@ model JobRole {
 // =======================================
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  email     String   @unique
-  password  String
-  role      UserRole
-  image     Image?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  email      String   @unique
+  password   String
+  role       UserRole
+  employeeId String?  @unique @db.ObjectId
+  image      Image?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Employee relation
+  employee Employee? @relation(fields: [employeeId], references: [id])
 
   // Competency relations
   createdCompetencies Competency[] @relation("CompetencyCreatedBy")
@@ -96,13 +127,13 @@ model User {
   createdCourses Course[] @relation("CourseCreatedBy")
   updatedCourses Course[] @relation("CourseUpdatedBy")
 
-  // TrainingSession relations
-  createdTrainingSessions TrainingSession[] @relation("TrainingSessionCreatedBy")
-  updatedTrainingSessions TrainingSession[] @relation("TrainingSessionUpdatedBy")
-
   // SuccessionPlan relations
   createdSuccessionPlans SuccessionPlan[] @relation("SuccessionCreatedBy")
   updatedSuccessionPlans SuccessionPlan[] @relation("SuccessionUpdatedBy")
+
+  // Training relations
+  createdTrainings Training[] @relation("TrainingCreatedBy")
+  updatedTrainings Training[] @relation("TrainingUpdatedBy")
 }
 
 type Image {
@@ -128,13 +159,17 @@ model Employee {
   updatedAt  DateTime       @updatedAt
 
   jobRole        JobRole?             @relation(fields: [positionId], references: [id])
+  user           User?
   competencies   EmployeeCompetency[]
   gapAnalyses    GapAnalysis[]
   enrollments    Enrollment[]
-  trainings      TrainingRecord[]
   performance    Performance[]
   succession     SuccessionPlan[]
   CourseFeedback CourseFeedback[]
+  trainingEnrollments TrainingEnrollment[]
+  trainingCompetencyImpacts TrainingCompetencyImpact[]
+  achievementUploads AchievementUpload[]
+  notifications  Notification[]
 }
 
 // =======================================
@@ -179,6 +214,8 @@ model Competency {
   employeeCompetencies EmployeeCompetency[]
   gapAnalyses          GapAnalysis[]
   recommendations      TrainingRecommendation[]
+  trainingImpacts      TrainingCompetencyImpact[]
+  achievementUploads   AchievementUpload[]
 }
 
 model EmployeeCompetency {
@@ -267,7 +304,6 @@ model Course {
   enrollments      Enrollment[]
   feedbacks        CourseFeedback[]
   recommendations  TrainingRecommendation[]
-  trainingSessions TrainingSession[]
 }
 
 model CourseMaterial {
@@ -391,42 +427,130 @@ model CourseFeedback {
 // TRAINING MANAGEMENT
 // =======================================
 
-model TrainingSession {
+model Venue {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  courseId    String   @db.ObjectId
-  date        DateTime
-  time        String?
-  location    String?
-  trainer     String?
-  duration    Int // in minutes
-  title       String
-  description String?
-  capacity    Int
-  status      String // Scheduled, Completed, Canceled
+  name        String
+  address     String?
+  capacity    Int?
+  facilities  String[] // e.g., ["Projector", "WiFi", "Parking"]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  trainings Training[]
+}
+
+model Trainer {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String?   @unique
+  phone       String?
+  expertise   String[] // Array of expertise areas
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trainings Training[]
+}
+
+model Training {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  trainingId        String         @unique
+  title             String
+  description       String?
+  trainingType       TrainingType
+  startDate         DateTime
+  endDate           DateTime
+  durationHours     Float
+  venueId           String?        @db.ObjectId
+  trainerId         String?        @db.ObjectId
+  trainerName       String?        // Trainer name as text input
+  venueName         String?        // Venue name as text input
+  meetingLink       String?        // Online meeting link
+  address           String?        // Onsite address
+  taggedCompetencies String[]      @db.ObjectId // Array of Competency IDs
+  maxParticipants   Int
+  status            TrainingStatus @default(DRAFT)
+  qrCode            String?        // Generated QR code data
+  qrCodeExpiresAt   DateTime?      // QR code expiration time
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   // Audit fields
   createdBy String  @db.ObjectId
   updatedBy String? @db.ObjectId
-  creator   User    @relation("TrainingSessionCreatedBy", fields: [createdBy], references: [id])
-  updater   User?   @relation("TrainingSessionUpdatedBy", fields: [updatedBy], references: [id])
+  creator   User    @relation("TrainingCreatedBy", fields: [createdBy], references: [id])
+  updater   User?   @relation("TrainingUpdatedBy", fields: [updatedBy], references: [id])
 
-  course  Course           @relation(fields: [courseId], references: [id])
-  records TrainingRecord[]
+  venue              Venue?                    @relation(fields: [venueId], references: [id])
+  trainer            Trainer?                  @relation(fields: [trainerId], references: [id])
+  enrollments        TrainingEnrollment[]
+  competencyImpacts  TrainingCompetencyImpact[]
 }
 
-model TrainingRecord {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId    String    @db.ObjectId
-  trainingId    String    @db.ObjectId
-  attendance    Boolean   @default(false)
-  certification String?
-  completed     Boolean   @default(false)
-  completedAt   DateTime?
+model TrainingEnrollment {
+  id            String                  @id @default(auto()) @map("_id") @db.ObjectId
+  trainingId    String                  @db.ObjectId
+  employeeId    String                  @db.ObjectId
+  status        TrainingEnrollmentStatus @default(PENDING)
+  enrollmentType EnrollmentType         @default(SELF) // MANUAL, AUTO, SELF
+  approvedBy    String?                 @db.ObjectId // User ID who approved/rejected
+  approvedAt    DateTime?
+  rejectionReason String?
+  enrolledAt    DateTime                @default(now())
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
 
-  employee Employee        @relation(fields: [employeeId], references: [id])
-  training TrainingSession @relation(fields: [trainingId], references: [id])
+  training   Training            @relation(fields: [trainingId], references: [id])
+  employee   Employee            @relation(fields: [employeeId], references: [id])
+  attendance TrainingAttendance?
+  evaluation TrainingEvaluation?
+}
+
+model TrainingAttendance {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  enrollmentId  String          @unique @db.ObjectId
+  status        AttendanceStatus @default(ABSENT)
+  timeIn        DateTime?
+  timeOut       DateTime?
+  location      String?         // Optional location data from QR scan
+  qrScannedAt   DateTime?       // When QR was scanned
+  isLocked      Boolean         @default(false) // Lock after training ends
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  enrollment TrainingEnrollment @relation(fields: [enrollmentId], references: [id])
+}
+
+model TrainingEvaluation {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  enrollmentId          String   @unique @db.ObjectId
+  trainingRating        Int      // 1-5 rating for training
+  trainingComments      String?
+  trainerRating          Int?     // 1-5 rating for trainer
+  trainerComments       String?
+  employeePerformanceRating Int?  // 1-5 rating for employee performance/improvement (by HR/Manager/Trainer)
+  employeeImprovementComments String? // Comments about employee's improvement during training
+  effectivenessScore    Float?   // Calculated effectiveness score
+  submittedAt           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  enrollment TrainingEnrollment @relation(fields: [enrollmentId], references: [id])
+}
+
+model TrainingCompetencyImpact {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  trainingId        String   @db.ObjectId
+  employeeId        String   @db.ObjectId
+  competencyId      String   @db.ObjectId
+  previousLevel     Int      // Level before training
+  newLevel          Int      // Level after training
+  improvement       Int      // newLevel - previousLevel
+  createdAt         DateTime @default(now())
+
+  training   Training   @relation(fields: [trainingId], references: [id])
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  competency Competency @relation(fields: [competencyId], references: [id])
 }
 
 // =======================================
@@ -465,6 +589,37 @@ model Performance {
   // Audit fields
   createdBy String   @db.ObjectId
   createdAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+// =======================================
+// EMPLOYEE SELF-SERVICE (ESS)
+// =======================================
+
+model AchievementUpload {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId   String   @db.ObjectId
+  title        String
+  description  String?
+  fileUrl      String
+  competencyId String?  @db.ObjectId
+  status       String   @default("Pending") // Pending | Approved | Rejected
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee  Employee   @relation(fields: [employeeId], references: [id])
+  competency Competency? @relation(fields: [competencyId], references: [id])
+}
+
+model Notification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String   @db.ObjectId
+  type       String   // COURSE_DUE, TRAINING_APPROVAL, COMPETENCY_UPDATE, PROMOTION_READY, EVALUATION_REMINDER
+  message    String
+  isRead     Boolean  @default(false)
+  metadata   Json?    // Additional context (courseId, trainingId, etc.)
+  createdAt  DateTime @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id])
 }

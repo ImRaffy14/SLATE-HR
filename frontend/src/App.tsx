@@ -10,6 +10,7 @@ import PerformanceAnalysis from "./pages/PerformanceAnalysis";
 import SuccessionPlanning from "./pages/SuccessionPlanning";
 import TrainingManagement from "./pages/TrainingManagement";
 import EnrollmentManagement from "./pages/enrollmentManagement";
+import EmployeeSelfService from "./pages/EmployeeSelfService";
 import WithSocket from "./components/WithSocket";
 import FullPageLoader from "./components/FullpageLoader";
 import { Toaster } from "react-hot-toast";
@@ -113,12 +114,42 @@ function App() {
         { 
           path: "training", 
           element: <TrainingManagement />,
-          roles: ["ADMIN", "USER"] 
+          roles: ["ADMIN", "USER", "HR", "MANAGER", "EMPLOYEE"] 
         },
         {
           path: "enrollments/:courseId",
           element: <EnrollmentManagement />,
           roles: ["ADMIN", "USER"]
+        },
+        {
+          path: "ess",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
+        },
+        {
+          path: "ess/career-path",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
+        },
+        {
+          path: "ess/learning",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
+        },
+        {
+          path: "ess/trainings",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
+        },
+        {
+          path: "ess/achievements",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
+        },
+        {
+          path: "ess/notifications",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
         }
       ],
     },

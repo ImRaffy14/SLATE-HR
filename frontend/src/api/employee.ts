@@ -32,7 +32,6 @@ export const getEmployeeById = async (id: string) => {
 
 // Create an employee
 export const createEmployee = async (data: {
-  employeeId: string;
   name: string;
   email?: string;
   department?: string;

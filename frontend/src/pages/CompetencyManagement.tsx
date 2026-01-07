@@ -22,6 +22,7 @@ import {
   Award,
   FileText,
   BarChart3,
+  Calendar,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -74,6 +75,7 @@ import {
 } from "@/api/trainingRecommendation"
 import { getEmployees } from "@/api/employee"
 import { getCourses, enrollEmployee, getEmployeeEnrollments } from "@/api/learning"
+import { getTrainings, enrollInTraining, getEmployeeTrainings } from "@/api/training"
 import { Competency, CompetencyCategory, JobRole, ProficiencyLevel, EmployeeCompetency, TrainingRecommendation } from "@/types/competency"
 import {
   getRequiredLevel,
@@ -210,6 +212,14 @@ export default function CompetencyManagement() {
     staleTime: 30000, // Cache for 30 seconds
   })
   const courses = coursesData?.courses || []
+
+  // Fetch trainings for recommendations
+  const { data: trainingsData, isLoading: isTrainingsLoading } = useQuery({
+    queryKey: ["trainings", "OPEN", "ONGOING"],
+    queryFn: () => getTrainings({ status: "OPEN" }),
+    staleTime: 30000,
+  })
+  const trainings = trainingsData?.trainings || []
 
   // Mutations
   const { mutate: createCompetencyMutate, isPending: isCreatingCompetency } = useMutation({
@@ -399,6 +409,20 @@ export default function CompetencyManagement() {
     },
   })
 
+  const { mutate: enrollInTrainingMutate, isPending: isEnrollingInTraining } = useMutation({
+    mutationFn: ({ employeeId, trainingId }: { employeeId: string; trainingId: string }) =>
+      enrollInTraining(trainingId, employeeId, "MANUAL"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employeeTrainings"] })
+      queryClient.invalidateQueries({ queryKey: ["trainings"] })
+      toast.success("Employee enrolled in training successfully!")
+      refetchEmployeeTrainings()
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to enroll employee in training")
+    },
+  })
+
   // Queries for modals
   const { data: employeeCompetenciesData, isLoading: isEmployeeCompetenciesLoading } = useQuery({
     queryKey: ["employeeCompetencies", selectedEmployee?.id],
@@ -424,7 +448,7 @@ export default function CompetencyManagement() {
       if (!selectedEmployee?.id) return null
       return getGapAnalysis(selectedEmployee.id)
     },
-    enabled: !!selectedEmployee?.id && isGapAnalysisModalOpen,
+    enabled: !!selectedEmployee?.id && (isGapAnalysisModalOpen || isRecommendationsModalOpen),
   })
 
   const { data: employeeRecommendationsData, isLoading: isEmployeeRecommendationsLoading } = useQuery({
@@ -443,8 +467,19 @@ export default function CompetencyManagement() {
       if (!selectedEmployee?.id) return []
       return getEmployeeEnrollments(selectedEmployee.id)
     },
-    enabled: !!selectedEmployee?.id && isGapAnalysisModalOpen,
+    enabled: !!selectedEmployee?.id && (isGapAnalysisModalOpen || isRecommendationsModalOpen),
   })
+
+  // Fetch employee trainings to check enrollment status
+  const { data: employeeTrainingsData, refetch: refetchEmployeeTrainings } = useQuery({
+    queryKey: ["employeeTrainings", selectedEmployee?.id],
+    queryFn: () => {
+      if (!selectedEmployee?.id) return { enrollments: [] }
+      return getEmployeeTrainings(selectedEmployee.id)
+    },
+    enabled: !!selectedEmployee?.id && (isGapAnalysisModalOpen || isRecommendationsModalOpen),
+  })
+  const employeeTrainings = employeeTrainingsData?.enrollments || []
 
   // Helper functions
   const resetCompetencyForm = () => {
@@ -2690,101 +2725,282 @@ export default function CompetencyManagement() {
                                 </div>
                               </div>
                               
-                              {/* Training Recommendations */}
-                              {gapValue > 0 && displayRecommendations.length > 0 && (
-                                <div className="mt-4 pt-4 border-t">
-                                  <Label className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                    <BookOpen size={16} />
-                                    Training Recommendations ({displayRecommendations.length})
-                                  </Label>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {displayRecommendations.map((rec: TrainingRecommendation) => {
-                                      const courseId = rec.courseId || rec.course?.id
-                                      const isEnrolled = courseId && employeeEnrollmentsData?.some((enrollment: any) => 
-                                        enrollment.courseId === courseId
-                                      )
-                                      
-                                      return (
-                                        <Card key={rec.id} className="bg-blue-50 border-blue-200 hover:border-blue-300 transition-colors">
-                                          <CardContent className="pt-4">
-                                            <div className="space-y-2">
-                                              <div className="font-medium text-sm text-blue-900">{rec.title}</div>
-                                              {rec.description && (
-                                                <p className="text-xs text-gray-700 line-clamp-3">{rec.description}</p>
-                                              )}
-                                              <div className="flex items-center flex-wrap gap-2 mt-3">
-                                                <Badge variant="outline" className="text-xs">
-                                                  Difficulty: {rec.difficultyLevel}/5
-                                                </Badge>
-                                                {rec.courseId || rec.course ? (
-                                                  <div className="flex flex-col gap-2 w-full">
-                                                    <Badge variant="outline" className="text-xs w-fit">
-                                                      <BookOpen size={12} className="mr-1" />
-                                                      Course: {rec.course?.title || "Course Linked"}
-                                                    </Badge>
-                                                    <div className="flex items-center gap-2">
-                                                      <a
-                                                        href={`/learning-management?course=${courseId}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                      >
-                                                        <BookOpen size={12} />
-                                                        View Course
-                                                      </a>
-                                                      {isEnrolled ? (
-                                                        <Badge variant="default" className="text-xs">
-                                                          <Check size={12} className="mr-1" />
-                                                          Enrolled
-                                                        </Badge>
-                                                      ) : (
-                                                        <Button
-                                                          size="sm"
-                                                          variant="default"
-                                                          className="h-6 text-xs px-2"
-                                                          onClick={() => {
-                                                            if (selectedEmployee?.id && courseId) {
-                                                              enrollEmployeeMutate({
-                                                                employeeId: selectedEmployee.id,
-                                                                courseId: courseId,
-                                                              })
-                                                            }
-                                                          }}
-                                                          disabled={isEnrolling}
-                                                        >
-                                                          {isEnrolling ? "Enrolling..." : "Enroll"}
-                                                        </Button>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                ) : (
-                                                  <span className="text-xs text-gray-500">No course linked</span>
+                              {/* Available Trainings and Courses for this Competency */}
+                              {gapValue > 0 && (() => {
+                                const competencyId = gap.competency?.id
+                                if (!competencyId) return null
+
+                                // Get trainings tagged with this competency
+                                const matchingTrainings = trainings.filter((training: any) =>
+                                  training.taggedCompetencies?.includes(competencyId) &&
+                                  (training.status === "OPEN" || training.status === "ONGOING")
+                                )
+
+                                // Get courses tagged with this competency
+                                const matchingCourses = courses.filter((course: any) =>
+                                  course.taggedCompetencies?.includes(competencyId)
+                                )
+
+                                // Check enrollment status
+                                const trainingsWithStatus = matchingTrainings.map((training: any) => {
+                                  const isEnrolled = employeeTrainings.some((enrollment: any) => 
+                                    enrollment.trainingId === training.id && enrollment.status === "APPROVED"
+                                  )
+                                  return { ...training, isEnrolled, type: "training" }
+                                })
+
+                                const coursesWithStatus = matchingCourses.map((course: any) => {
+                                  const isEnrolled = employeeEnrollmentsData?.some((enrollment: any) => 
+                                    enrollment.courseId === course.id
+                                  )
+                                  return { ...course, isEnrolled, type: "course" }
+                                })
+
+                                const allOptions = [...displayRecommendations, ...trainingsWithStatus, ...coursesWithStatus]
+                                
+                                if (allOptions.length === 0) return null
+
+                                return (
+                                  <div className="mt-4 pt-4 border-t">
+                                    <Label className="text-sm font-semibold flex items-center gap-2 mb-3">
+                                      <BookOpen size={16} />
+                                      Available Training & Learning Options ({allOptions.length})
+                                    </Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {/* Training Recommendations */}
+                                      {displayRecommendations.map((rec: TrainingRecommendation) => {
+                                        const courseId = rec.courseId || rec.course?.id
+                                        const isEnrolled = courseId && employeeEnrollmentsData?.some((enrollment: any) => 
+                                          enrollment.courseId === courseId
+                                        )
+                                        
+                                        return (
+                                          <Card key={`rec-${rec.id}`} className="bg-blue-50 border-blue-200 hover:border-blue-300 transition-colors">
+                                            <CardContent className="pt-4">
+                                              <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="outline" className="text-xs bg-blue-100">Recommendation</Badge>
+                                                  <div className="font-medium text-sm text-blue-900">{rec.title}</div>
+                                                </div>
+                                                {rec.description && (
+                                                  <p className="text-xs text-gray-700 line-clamp-3">{rec.description}</p>
                                                 )}
+                                                <div className="flex items-center flex-wrap gap-2 mt-3">
+                                                  <Badge variant="outline" className="text-xs">
+                                                    Difficulty: {rec.difficultyLevel}/5
+                                                  </Badge>
+                                                  {rec.courseId || rec.course ? (
+                                                    <div className="flex flex-col gap-2 w-full">
+                                                      <Badge variant="outline" className="text-xs w-fit">
+                                                        <BookOpen size={12} className="mr-1" />
+                                                        Course: {rec.course?.title || "Course Linked"}
+                                                      </Badge>
+                                                      <div className="flex items-center gap-2">
+                                                        <a
+                                                          href={`/learning-management?course=${courseId}`}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                                                          onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                          <BookOpen size={12} />
+                                                          View Course
+                                                        </a>
+                                                        {isEnrolled ? (
+                                                          <Badge variant="default" className="text-xs">
+                                                            <Check size={12} className="mr-1" />
+                                                            Enrolled
+                                                          </Badge>
+                                                        ) : (
+                                                          <Button
+                                                            size="sm"
+                                                            variant="default"
+                                                            className="h-6 text-xs px-2"
+                                                            onClick={() => {
+                                                              if (selectedEmployee?.id && courseId) {
+                                                                enrollEmployeeMutate({
+                                                                  employeeId: selectedEmployee.id,
+                                                                  courseId: courseId,
+                                                                })
+                                                              }
+                                                            }}
+                                                            disabled={isEnrolling}
+                                                          >
+                                                            {isEnrolling ? "Enrolling..." : "Enroll"}
+                                                          </Button>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  ) : (
+                                                    <span className="text-xs text-gray-500">No course linked</span>
+                                                  )}
+                                                </div>
                                               </div>
-                                            </div>
-                                          </CardContent>
-                                        </Card>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {gapValue > 0 && displayRecommendations.length === 0 && (
-                                <div className="mt-4 pt-4 border-t">
-                                  <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <AlertCircle size={16} className="text-yellow-600 mt-0.5 shrink-0" />
-                                    <div>
-                                      <p className="text-sm font-medium text-yellow-900">No Training Recommendations</p>
-                                      <p className="text-xs text-yellow-700 mt-1">
-                                        No training recommendations are currently available for this competency gap. 
-                                        Consider creating recommendations in the Recommendations tab.
-                                      </p>
+                                            </CardContent>
+                                          </Card>
+                                        )
+                                      })}
+
+                                      {/* Direct Trainings */}
+                                      {trainingsWithStatus.map((training: any) => {
+                                        const isEnrolled = training.isEnrolled
+                                        return (
+                                          <Card key={`training-${training.id}`} className="bg-green-50 border-green-200 hover:border-green-300 transition-colors">
+                                            <CardContent className="pt-4">
+                                              <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="outline" className="text-xs bg-green-100">Training</Badge>
+                                                  <div className="font-medium text-sm text-green-900">{training.title}</div>
+                                                </div>
+                                                {training.description && (
+                                                  <p className="text-xs text-gray-700 line-clamp-2">{training.description}</p>
+                                                )}
+                                                <div className="flex items-center flex-wrap gap-2 mt-3">
+                                                  <Badge variant="outline" className="text-xs">{training.trainingType}</Badge>
+                                                  <Badge variant="outline" className="text-xs">{training.status}</Badge>
+                                                  <div className="flex items-center gap-2 w-full mt-2">
+                                                    <div className="flex-1 text-xs text-gray-600">
+                                                      {new Date(training.startDate).toLocaleDateString()} • {training.durationHours}h
+                                                    </div>
+                                                    {isEnrolled ? (
+                                                      <Badge variant="default" className="text-xs">
+                                                        <Check size={12} className="mr-1" />
+                                                        Enrolled
+                                                      </Badge>
+                                                    ) : (
+                                                      <Button
+                                                        size="sm"
+                                                        variant="default"
+                                                        className="h-6 text-xs px-2"
+                                                        onClick={() => {
+                                                          if (selectedEmployee?.id) {
+                                                            enrollInTrainingMutate({
+                                                              employeeId: selectedEmployee.id,
+                                                              trainingId: training.id,
+                                                            })
+                                                          }
+                                                        }}
+                                                        disabled={isEnrollingInTraining || training.status !== "OPEN"}
+                                                      >
+                                                        {isEnrollingInTraining ? "Enrolling..." : training.status === "OPEN" ? "Enroll" : "Not Available"}
+                                                      </Button>
+                                                    )}
+                                                  </div>
+                                                  <a
+                                                    href={`/training-management`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-green-600 hover:text-green-800 hover:underline flex items-center gap-1"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                  >
+                                                    <Calendar size={12} />
+                                                    View Training
+                                                  </a>
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        )
+                                      })}
+
+                                      {/* Direct Courses */}
+                                      {coursesWithStatus.filter((course: any) => 
+                                        !displayRecommendations.some((rec: TrainingRecommendation) => 
+                                          (rec.courseId || rec.course?.id) === course.id
+                                        )
+                                      ).map((course: any) => {
+                                        const isEnrolled = course.isEnrolled
+                                        return (
+                                          <Card key={`course-${course.id}`} className="bg-purple-50 border-purple-200 hover:border-purple-300 transition-colors">
+                                            <CardContent className="pt-4">
+                                              <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="outline" className="text-xs bg-purple-100">Learning Module</Badge>
+                                                  <div className="font-medium text-sm text-purple-900">{course.title}</div>
+                                                </div>
+                                                {course.description && (
+                                                  <p className="text-xs text-gray-700 line-clamp-2">{course.description}</p>
+                                                )}
+                                                <div className="flex items-center flex-wrap gap-2 mt-3">
+                                                  <div className="flex items-center gap-2 w-full">
+                                                    <Badge variant="outline" className="text-xs">
+                                                      {course.estimatedHours || 0}h
+                                                    </Badge>
+                                                    {isEnrolled ? (
+                                                      <Badge variant="default" className="text-xs">
+                                                        <Check size={12} className="mr-1" />
+                                                        Enrolled
+                                                      </Badge>
+                                                    ) : (
+                                                      <Button
+                                                        size="sm"
+                                                        variant="default"
+                                                        className="h-6 text-xs px-2"
+                                                        onClick={() => {
+                                                          if (selectedEmployee?.id) {
+                                                            enrollEmployeeMutate({
+                                                              employeeId: selectedEmployee.id,
+                                                              courseId: course.id,
+                                                            })
+                                                          }
+                                                        }}
+                                                        disabled={isEnrolling}
+                                                      >
+                                                        {isEnrolling ? "Enrolling..." : "Enroll"}
+                                                      </Button>
+                                                    )}
+                                                  </div>
+                                                  <a
+                                                    href={`/learning-management?course=${course.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-purple-600 hover:text-purple-800 hover:underline flex items-center gap-1"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                  >
+                                                    <BookOpen size={12} />
+                                                    View Course
+                                                  </a>
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        )
+                                      })}
                                     </div>
                                   </div>
-                                </div>
-                              )}
+                                )
+                              })()}
+                              
+                              {gapValue > 0 && (() => {
+                                const competencyId = gap.competency?.id
+                                if (!competencyId) return null
+
+                                const matchingTrainings = trainings.filter((training: any) =>
+                                  training.taggedCompetencies?.includes(competencyId) &&
+                                  (training.status === "OPEN" || training.status === "ONGOING")
+                                )
+                                const matchingCourses = courses.filter((course: any) =>
+                                  course.taggedCompetencies?.includes(competencyId)
+                                )
+
+                                if (displayRecommendations.length === 0 && matchingTrainings.length === 0 && matchingCourses.length === 0) {
+                                  return (
+                                    <div className="mt-4 pt-4 border-t">
+                                      <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                        <AlertCircle size={16} className="text-yellow-600 mt-0.5 shrink-0" />
+                                        <div>
+                                          <p className="text-sm font-medium text-yellow-900">No Training Options Available</p>
+                                          <p className="text-xs text-yellow-700 mt-1">
+                                            No trainings or learning modules are currently available for this competency gap. 
+                                            Consider creating training recommendations or tagging trainings/courses with this competency.
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                }
+                                return null
+                              })()}
                             </CardContent>
                           </Card>
                         )
@@ -2817,9 +3033,9 @@ export default function CompetencyManagement() {
       <Dialog open={isRecommendationsModalOpen} onOpenChange={setIsRecommendationsModalOpen}>
         <DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Training Recommendations</DialogTitle>
+            <DialogTitle>Training & Learning Recommendations</DialogTitle>
             <DialogDescription>
-              View training recommendations for {selectedEmployee?.name}
+              View training and learning recommendations for {selectedEmployee?.name} based on their competency gaps
             </DialogDescription>
           </DialogHeader>
           {isEmployeeRecommendationsLoading ? (
@@ -2828,50 +3044,278 @@ export default function CompetencyManagement() {
             </div>
           ) : (
             <div className="space-y-4">
-              {employeeRecommendationsData && employeeRecommendationsData.length > 0 ? (
+              {/* Training Recommendations */}
+              {employeeRecommendationsData && employeeRecommendationsData.length > 0 && (
                 <div className="space-y-4">
-                  {employeeRecommendationsData.map((rec: TrainingRecommendation) => (
-                    <Card key={rec.id}>
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium">{rec.title}</div>
-                            <div className="text-sm text-gray-600 mt-1">
-                              {rec.description || "No description"}
-                            </div>
-                            <div className="flex items-center gap-4 mt-2">
-                              <Badge variant="outline">Difficulty: {rec.difficultyLevel}/5</Badge>
-                              {rec.competency && (
-                                <Badge variant="outline">{rec.competency.name}</Badge>
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={16} />
+                    <Label className="text-sm font-semibold">Training Recommendations ({employeeRecommendationsData.length})</Label>
+                  </div>
+                  {employeeRecommendationsData.map((rec: TrainingRecommendation) => {
+                    const courseId = rec.courseId || rec.course?.id
+                    const isEnrolled = courseId && employeeEnrollmentsData?.some((enrollment: any) => 
+                      enrollment.courseId === courseId
+                    )
+                    
+                    return (
+                      <Card key={rec.id} className="bg-blue-50 border-blue-200">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className="bg-blue-100">Recommendation</Badge>
+                                <div className="font-medium">{rec.title}</div>
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {rec.description || "No description"}
+                              </div>
+                              <div className="flex items-center gap-4 mt-2">
+                                <Badge variant="outline">Difficulty: {rec.difficultyLevel}/5</Badge>
+                                {rec.competency && (
+                                  <Badge variant="outline">{rec.competency.name}</Badge>
+                                )}
+                              </div>
+                              {rec.courseId || rec.course ? (
+                                <div className="mt-2 space-y-2">
+                                  <Badge variant="outline" className="text-sm">
+                                    <BookOpen size={12} className="mr-1" />
+                                    Course: {rec.course?.title || "Course Linked"}
+                                  </Badge>
+                                  <div className="flex items-center gap-2">
+                                    <a
+                                      href={`/learning-management?course=${rec.courseId || rec.course?.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline text-sm inline-block"
+                                    >
+                                      View in Learning Management →
+                                    </a>
+                                    {isEnrolled ? (
+                                      <Badge variant="default" className="text-xs">
+                                        <Check size={12} className="mr-1" />
+                                        Enrolled
+                                      </Badge>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-7 text-xs"
+                                        onClick={() => {
+                                          if (selectedEmployee?.id && courseId) {
+                                            enrollEmployeeMutate({
+                                              employeeId: selectedEmployee.id,
+                                              courseId: courseId,
+                                            })
+                                          }
+                                        }}
+                                        disabled={isEnrolling}
+                                      >
+                                        {isEnrolling ? "Enrolling..." : "Enroll in Course"}
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-500 mt-2">No course linked</span>
                               )}
                             </div>
-                            {rec.courseId || rec.course ? (
-                              <div className="mt-2 space-y-1">
-                                <Badge variant="outline" className="text-sm">
-                                  <BookOpen size={12} className="mr-1" />
-                                  Course: {rec.course?.title || "Course Linked"}
-                                </Badge>
-                                <a
-                                  href={`/learning-management?course=${rec.courseId || rec.course?.id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline text-sm inline-block"
-                                >
-                                  View in Learning Management →
-                                </a>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-gray-500 mt-2">No course linked</span>
-                            )}
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
-              ) : (
+              )}
+
+              {/* Available Trainings & Courses based on Gap Analysis */}
+              {(() => {
+                if (!selectedEmployee?.id) return null
+                
+                // Get all competencies with gaps for this employee
+                const gaps = gapAnalysisData || []
+                const competencyIds = gaps
+                  .filter((gap: any) => (gap.gap || 0) > 0)
+                  .map((gap: any) => gap.competency?.id)
+                  .filter(Boolean)
+
+                if (competencyIds.length === 0) return null
+
+                // Get trainings tagged with any of these competencies
+                const relevantTrainings = trainings.filter((training: any) =>
+                  training.taggedCompetencies?.some((compId: string) => competencyIds.includes(compId)) &&
+                  (training.status === "OPEN" || training.status === "ONGOING")
+                )
+
+                // Get courses tagged with any of these competencies
+                const relevantCourses = courses.filter((course: any) =>
+                  course.taggedCompetencies?.some((compId: string) => competencyIds.includes(compId))
+                )
+
+                // Filter out courses already in recommendations
+                const coursesNotInRecs = relevantCourses.filter((course: any) =>
+                  !employeeRecommendationsData?.some((rec: TrainingRecommendation) => 
+                    (rec.courseId || rec.course?.id) === course.id
+                  )
+                )
+
+                if (relevantTrainings.length === 0 && coursesNotInRecs.length === 0) return null
+
+                return (
+                  <div className="space-y-4 mt-6 pt-6 border-t">
+                    <div className="flex items-center gap-2">
+                      <Target size={16} />
+                      <Label className="text-sm font-semibold">Available Trainings & Learning Modules Based on Gaps</Label>
+                    </div>
+
+                    {/* Trainings */}
+                    {relevantTrainings.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-xs font-medium text-gray-600">TRAININGS</Label>
+                        {relevantTrainings.map((training: any) => {
+                          const isEnrolled = employeeTrainings.some((enrollment: any) => 
+                            enrollment.trainingId === training.id && enrollment.status === "APPROVED"
+                          )
+                          return (
+                            <Card key={`training-${training.id}`} className="bg-green-50 border-green-200">
+                              <CardContent className="pt-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Badge variant="outline" className="bg-green-100">Training</Badge>
+                                      <div className="font-medium">{training.title}</div>
+                                    </div>
+                                    {training.description && (
+                                      <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                        {training.description}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-4 mt-2">
+                                      <Badge variant="outline" className="text-xs">{training.trainingType}</Badge>
+                                      <Badge variant="outline" className="text-xs">{training.status}</Badge>
+                                      <span className="text-xs text-gray-600">
+                                        {new Date(training.startDate).toLocaleDateString()} • {training.durationHours}h
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-3">
+                                      <a
+                                        href={`/training-management`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-green-600 hover:underline text-sm"
+                                      >
+                                        View Training →
+                                      </a>
+                                      {isEnrolled ? (
+                                        <Badge variant="default" className="text-xs">
+                                          <Check size={12} className="mr-1" />
+                                          Enrolled
+                                        </Badge>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          variant="default"
+                                          className="h-7 text-xs"
+                                          onClick={() => {
+                                            if (selectedEmployee?.id) {
+                                              enrollInTrainingMutate({
+                                                employeeId: selectedEmployee.id,
+                                                trainingId: training.id,
+                                              })
+                                            }
+                                          }}
+                                          disabled={isEnrollingInTraining || training.status !== "OPEN"}
+                                        >
+                                          {isEnrollingInTraining ? "Enrolling..." : training.status === "OPEN" ? "Enroll in Training" : "Not Available"}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Courses */}
+                    {coursesNotInRecs.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-xs font-medium text-gray-600">LEARNING MODULES</Label>
+                        {coursesNotInRecs.map((course: any) => {
+                          const isEnrolled = employeeEnrollmentsData?.some((enrollment: any) => 
+                            enrollment.courseId === course.id
+                          )
+                          return (
+                            <Card key={`course-${course.id}`} className="bg-purple-50 border-purple-200">
+                              <CardContent className="pt-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Badge variant="outline" className="bg-purple-100">Learning Module</Badge>
+                                      <div className="font-medium">{course.title}</div>
+                                    </div>
+                                    {course.description && (
+                                      <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                        {course.description}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-4 mt-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {course.estimatedHours || 0}h
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-3">
+                                      <a
+                                        href={`/learning-management?course=${course.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-purple-600 hover:underline text-sm"
+                                      >
+                                        View Course →
+                                      </a>
+                                      {isEnrolled ? (
+                                        <Badge variant="default" className="text-xs">
+                                          <Check size={12} className="mr-1" />
+                                          Enrolled
+                                        </Badge>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          variant="default"
+                                          className="h-7 text-xs"
+                                          onClick={() => {
+                                            if (selectedEmployee?.id) {
+                                              enrollEmployeeMutate({
+                                                employeeId: selectedEmployee.id,
+                                                courseId: course.id,
+                                              })
+                                            }
+                                          }}
+                                          disabled={isEnrolling}
+                                        >
+                                          {isEnrolling ? "Enrolling..." : "Enroll in Course"}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {employeeRecommendationsData && employeeRecommendationsData.length === 0 && (!gapAnalysisData || gapAnalysisData.length === 0) && (
                 <div className="text-center py-8">
                   <p className="text-sm text-gray-500">No recommendations available for this employee.</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    View gap analysis to see available trainings and learning modules.
+                  </p>
                 </div>
               )}
             </div>

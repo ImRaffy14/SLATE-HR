@@ -21,6 +21,7 @@ export interface User {
     name: string;
     email: string;
     role: string;
+    employeeId?: string;
     image: {
         imageUrl: string;
         publicId: string;

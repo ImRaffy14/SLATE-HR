@@ -223,6 +223,15 @@ export const autoEnrollBasedOnGap = async (employeeId: string) => {
   }
 };
 
+export const getAllEnrollments = async () => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/learning/enrollments`);
+    return result.data.enrollments;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
 export const getEmployeeEnrollments = async (employeeId: string) => {
   try {
     const result = await axiosInstance.get(`/api/v1/learning/enrollments/employee/${employeeId}`);
