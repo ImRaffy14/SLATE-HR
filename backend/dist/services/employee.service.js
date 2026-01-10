@@ -14,7 +14,8 @@ class EmployeeService {
                 competencies: true,
                 enrollments: true,
                 performance: true,
-                succession: true,
+                talentPools: true,
+                idps: true,
                 trainingEnrollments: true,
             },
         });
@@ -27,7 +28,8 @@ class EmployeeService {
                 competencies: true,
                 enrollments: true,
                 performance: true,
-                succession: true,
+                talentPools: true,
+                idps: true,
                 trainingEnrollments: true,
             },
         });

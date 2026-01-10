@@ -32,7 +32,8 @@ export class DashboardService {
       allEnrollments,
       recommendedCourses,
       trainingEnrollments,
-      successionPlan
+      talentPools,
+      idps
     ] = await Promise.all([
       this.employeeService.getEmployeeByIdService(employeeId),
       this.competencyService.getEmployeeCompetencies(employeeId),
@@ -40,8 +41,23 @@ export class DashboardService {
       this.learningService.getEmployeeEnrollmentsService(employeeId),
       this.learningService.getRecommendedCoursesService(employeeId),
       this.trainingEnrollmentService.getEmployeeTrainings(employeeId),
-      prisma.successionPlan.findFirst({
+      prisma.talentPool.findMany({
         where: { employeeId },
+        include: {
+          role: {
+            include: { jobRole: true }
+          }
+        },
+        orderBy: { overallScore: 'desc' }
+      }),
+      prisma.individualDevelopmentPlan.findMany({
+        where: { employeeId, status: { in: ['DRAFT', 'ACTIVE'] } },
+        include: {
+          targetRole: {
+            include: { jobRole: true }
+          },
+          goals: true
+        },
         orderBy: { updatedAt: 'desc' }
       })
     ]);
@@ -53,12 +69,12 @@ export class DashboardService {
 
     // Filter ongoing courses (status IN_PROGRESS)
     const ongoingCourses = allEnrollments.filter(
-      enrollment => enrollment.status === 'IN_PROGRESS'
+      (enrollment: any) => enrollment.status === 'IN_PROGRESS'
     );
 
     // Filter ongoing trainings (status APPROVED and training status ONGOING)
     const ongoingTrainings = trainingEnrollments.enrollments?.filter(
-      enrollment => 
+      (enrollment: any) => 
         enrollment.status === 'APPROVED' && 
         enrollment.training.status === 'ONGOING'
     ) || [];
@@ -85,7 +101,7 @@ export class DashboardService {
     };
 
     // Calculate competency scores summary
-    const competencyScores = competencies.map(ec => ({
+    const competencyScores = competencies.map((ec: any) => ({
       competencyId: ec.competencyId,
       competencyName: ec.competency.name,
       categoryName: ec.competency.category.name,
@@ -127,7 +143,7 @@ export class DashboardService {
       },
       competencyScores,
       gapSummary,
-      ongoingCourses: ongoingCourses.map(enrollment => ({
+      ongoingCourses: ongoingCourses.map((enrollment: any) => ({
         id: enrollment.id,
         courseId: enrollment.courseId,
         courseTitle: enrollment.course.title,
@@ -135,7 +151,7 @@ export class DashboardService {
         completionPercentage: enrollment.completionPercentage,
         enrolledAt: enrollment.enrolledAt
       })),
-      ongoingTrainings: ongoingTrainings.map(enrollment => ({
+      ongoingTrainings: ongoingTrainings.map((enrollment: any) => ({
         id: enrollment.id,
         trainingId: enrollment.trainingId,
         trainingTitle: enrollment.training.title,
@@ -145,7 +161,7 @@ export class DashboardService {
         endDate: enrollment.training.endDate,
         enrolledAt: enrollment.enrolledAt
       })),
-      recommendedCourses: recommendedCourses.map(course => ({
+      recommendedCourses: recommendedCourses.map((course: any) => ({
         id: course.id,
         courseId: course.courseId,
         title: course.title,
@@ -165,13 +181,24 @@ export class DashboardService {
         endDate: training.endDate,
         durationHours: training.durationHours
       })),
-      readinessScore: successionPlan?.readiness || null,
-      successionPlan: successionPlan ? {
-        readiness: successionPlan.readiness,
-        comments: successionPlan.comments,
-        developmentActions: successionPlan.developmentActions,
-        updatedAt: successionPlan.updatedAt
-      } : null
+      succession: {
+        talentPools: talentPools.map(tp => ({
+          id: tp.id,
+          roleName: tp.role.jobRole.name,
+          overallScore: tp.overallScore,
+          readinessStatus: tp.readinessStatus,
+          riskLevel: tp.riskLevel
+        })),
+        idps: idps.map(idp => ({
+          id: idp.id,
+          targetRoleName: idp.targetRole.jobRole.name,
+          status: idp.status,
+          progress: idp.progress,
+          totalGoals: idp.goals.length,
+          completedGoals: idp.goals.filter(g => g.completed).length
+        })),
+        readinessScore: talentPools.length > 0 ? talentPools[0].overallScore : null
+      }
     };
   }
 }

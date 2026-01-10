@@ -70,6 +70,22 @@ export const enrollInTraining = async (trainingId: string) => {
 // ACHIEVEMENT FUNCTIONS
 // ============================================
 
+export const getAchievements = async (filters?: {
+  status?: string;
+  competencyId?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/ess/achievements`, {
+      params: filters,
+    });
+    return result.data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
 export const uploadAchievement = async (file: File, data: {
   title: string;
   description?: string;
@@ -121,6 +137,15 @@ export const markNotificationRead = async (notificationId: string) => {
   try {
     const result = await axiosInstance.patch(`/api/v1/ess/notifications/${notificationId}/read`);
     return result.data.notification;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getUnreadNotificationCount = async () => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/ess/notifications/unread-count`);
+    return result.data.count;
   } catch (error) {
     handleError(error);
   }

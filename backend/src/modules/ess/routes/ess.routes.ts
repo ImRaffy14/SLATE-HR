@@ -31,6 +31,7 @@ router.post('/enroll/training/:trainingId', bearerAuth, employeeAuth, essControl
 // ACHIEVEMENT UPLOAD ROUTES
 // ============================================
 
+router.get('/achievements', bearerAuth, employeeAuth, essController.getAchievements);
 router.post('/upload/achievement', bearerAuth, employeeAuth, upload.single('file'), essController.uploadAchievement);
 
 // ============================================
@@ -38,7 +39,14 @@ router.post('/upload/achievement', bearerAuth, employeeAuth, upload.single('file
 // ============================================
 
 router.get('/notifications', bearerAuth, employeeAuth, essController.getNotifications);
+router.get('/notifications/unread-count', bearerAuth, employeeAuth, essController.getUnreadCount);
 router.patch('/notifications/:id/read', bearerAuth, employeeAuth, essController.markNotificationRead);
+
+// ============================================
+// PERFORMANCE SUMMARY ROUTES
+// ============================================
+
+router.get('/performance-summary', bearerAuth, employeeAuth, essController.getPerformanceSummary);
 
 export default router;
 

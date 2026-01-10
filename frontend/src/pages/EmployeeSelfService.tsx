@@ -44,9 +44,12 @@ import {
   getCareerPathDetails,
   enrollInCourse,
   enrollInTraining,
+  getAchievements,
   uploadAchievement,
   getNotifications,
   markNotificationRead,
+  getPerformanceSummary,
+  ESSPerformanceSummaryResponse,
 } from "@/api/ess"
 import { getCourses, getCourseContent, markMaterialComplete, submitQuiz, getEmployeeEnrollments, updateEnrollmentProgress } from "@/api/learning"
 import { getTrainings, getEmployeeTrainings, scanQRCode, getTrainingById, getTrainingEnrollments } from "@/api/training"
@@ -247,11 +250,25 @@ export default function EmployeeSelfService() {
     enabled: isUploadModalOpen,
   })
 
+  // Achievements query (for achievements section)
+  const { data: achievementsData, isLoading: isAchievementsLoading } = useQuery({
+    queryKey: ["ess-achievements", dashboardData?.employee?.id],
+    queryFn: () => getAchievements({ status: "Approved", limit: 100 }), // Only show approved achievements
+    enabled: !!dashboardData?.employee?.id && activeSection === "achievements",
+  })
+
   // Notifications query
   const { data: notificationsData, isLoading: isNotificationsLoading } = useQuery({
     queryKey: ["ess-notifications", notificationFilters],
     queryFn: () => getNotifications(notificationFilters),
     enabled: activeSection === "notifications",
+  })
+
+  // Performance summary query
+  const { data: performanceSummaryData, isLoading: isPerformanceSummaryLoading } = useQuery({
+    queryKey: ["ess-performance-summary"],
+    queryFn: getPerformanceSummary,
+    enabled: activeSection === "performance",
   })
 
   // Enroll in course mutation
@@ -582,6 +599,8 @@ export default function EmployeeSelfService() {
         return renderAchievements()
       case "notifications":
         return renderNotifications()
+      case "performance":
+        return renderPerformance()
       default:
         return renderDashboard()
     }
@@ -785,14 +804,18 @@ export default function EmployeeSelfService() {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Readiness Score</CardTitle>
+                    <CardTitle className="text-sm font-medium">Succession Readiness</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {dashboard.readinessScore !== null ? `${dashboard.readinessScore}%` : "N/A"}
+                      {dashboard.succession?.readinessScore !== null && dashboard.succession?.readinessScore !== undefined
+                        ? `${dashboard.succession.readinessScore.toFixed(1)}%` 
+                        : "N/A"}
                     </div>
-                    <p className="text-xs text-muted-foreground">Promotion readiness</p>
+                    <p className="text-xs text-muted-foreground">
+                      {dashboard.succession?.talentPools?.length || 0} succession roles
+                    </p>
                   </CardContent>
                 </Card>
                 </div>
@@ -994,6 +1017,95 @@ export default function EmployeeSelfService() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Succession Readiness */}
+              {dashboard.succession && (dashboard.succession.talentPools.length > 0 || dashboard.succession.idps.length > 0) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-blue-500" />
+                      Succession Readiness
+                    </CardTitle>
+                    <CardDescription>Your status in the succession planning pipeline</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Talent Pools */}
+                      {dashboard.succession.talentPools.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <Award className="h-4 w-4" />
+                            Target Roles
+                          </h4>
+                          <div className="space-y-3">
+                            {dashboard.succession.talentPools.map((tp) => (
+                              <div key={tp.id} className="p-3 border rounded-lg bg-gray-50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium">{tp.roleName}</span>
+                                  <Badge className={
+                                    tp.readinessStatus === 'READY_NOW' ? 'bg-green-100 text-green-800' :
+                                    tp.readinessStatus === 'READY_6_MONTHS' ? 'bg-blue-100 text-blue-800' :
+                                    tp.readinessStatus === 'READY_1_YEAR' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }>
+                                    {tp.readinessStatus === 'READY_NOW' ? 'Ready Now' :
+                                     tp.readinessStatus === 'READY_6_MONTHS' ? 'Ready in 6 Months' :
+                                     tp.readinessStatus === 'READY_1_YEAR' ? 'Ready in 1 Year' :
+                                     'Not Ready'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Progress value={tp.overallScore || 0} className="flex-1 h-2" />
+                                  <span className="text-sm font-medium">
+                                    {tp.overallScore?.toFixed(1) || 0}%
+                                  </span>
+                                </div>
+                                {tp.riskLevel && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Risk: <span className={
+                                      tp.riskLevel === 'CRITICAL' || tp.riskLevel === 'HIGH' ? 'text-red-600' :
+                                      tp.riskLevel === 'MEDIUM' ? 'text-yellow-600' : 'text-green-600'
+                                    }>{tp.riskLevel}</span>
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* IDPs */}
+                      {dashboard.succession.idps.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            Development Plans
+                          </h4>
+                          <div className="space-y-3">
+                            {dashboard.succession.idps.map((idp) => (
+                              <div key={idp.id} className="p-3 border rounded-lg bg-gray-50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium">{idp.targetRoleName}</span>
+                                  <Badge variant={idp.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                                    {idp.status}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Progress value={idp.progress} className="flex-1 h-2" />
+                                  <span className="text-sm font-medium">{idp.progress.toFixed(0)}%</span>
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  {idp.completedGoals} / {idp.totalGoals} goals completed
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Ongoing Courses & Trainings */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -2017,6 +2129,8 @@ export default function EmployeeSelfService() {
   }
 
   const renderAchievements = () => {
+    const achievements = achievementsData?.achievements || []
+    
     return (
       <div className="space-y-6">
           <Card>
@@ -2024,7 +2138,7 @@ export default function EmployeeSelfService() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>Achievements & Certificates</CardTitle>
-                  <CardDescription>Upload your achievements and certificates</CardDescription>
+                  <CardDescription>View and manage your approved achievements and certificates</CardDescription>
                 </div>
                 <Button onClick={() => setIsUploadModalOpen(true)}>
                   <Upload className="w-4 h-4 mr-2" />
@@ -2033,9 +2147,69 @@ export default function EmployeeSelfService() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 text-center py-4">
-                Achievement uploads will be displayed here after approval
-              </p>
+              {isAchievementsLoading ? (
+                <div className="text-center py-8">
+                  <FullPageLoader message="Loading achievements..." showLogo={false} />
+                </div>
+              ) : achievements.length > 0 ? (
+                <div className="space-y-4">
+                  {achievements.map((achievement: any) => (
+                    <Card key={achievement.id}>
+                      <CardContent className="pt-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Award className="w-5 h-5 text-yellow-600" />
+                              <h4 className="font-medium text-lg">{achievement.title}</h4>
+                              <Badge 
+                                variant={achievement.status === 'Approved' ? 'default' : achievement.status === 'Rejected' ? 'destructive' : 'secondary'}
+                              >
+                                {achievement.status}
+                              </Badge>
+                            </div>
+                            {achievement.description && (
+                              <p className="text-sm text-gray-600 mb-2">{achievement.description}</p>
+                            )}
+                            {achievement.competency && (
+                              <Badge variant="outline" className="mb-2">
+                                {achievement.competency.name}
+                              </Badge>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              Uploaded: {new Date(achievement.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            {achievement.fileUrl && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(achievement.fileUrl, '_blank')}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">
+                    No approved achievements or certificates yet.
+                  </p>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Upload certificates and achievements to see them here after HR/Manager approval.
+                  </p>
+                  <Button onClick={() => setIsUploadModalOpen(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Achievement
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
       </div>
@@ -2112,6 +2286,242 @@ export default function EmployeeSelfService() {
               )}
             </CardContent>
           </Card>
+      </div>
+    )
+  }
+
+  const renderPerformance = () => {
+    const perfData = performanceSummaryData as ESSPerformanceSummaryResponse | undefined
+
+    if (isPerformanceSummaryLoading) {
+      return <FullPageLoader message="Loading performance summary..." showLogo={true} />
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Performance Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Performance Trend</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {perfData?.summary?.performanceTrend || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Competency Growth</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {perfData?.summary?.competencyGrowth || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 rounded-xl">
+                  <BookOpen className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Learning Activity</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {perfData?.summary?.learningActivity || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-100 rounded-xl">
+                  <GraduationCap className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Training Attendance</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {perfData?.summary?.trainingAttendance || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Performance History */}
+        {perfData?.history && perfData.history.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance History</CardTitle>
+              <CardDescription>Your performance scores over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Overall</TableHead>
+                    <TableHead>Performance</TableHead>
+                    <TableHead>Competency</TableHead>
+                    <TableHead>Learning</TableHead>
+                    <TableHead>Training</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {perfData.history.map((h, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{h.period}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Progress value={h.overallScore} className="h-2 w-16" />
+                          <span className="text-sm">{Math.round(h.overallScore)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{Math.round(h.performanceScore)}%</TableCell>
+                      <TableCell>{Math.round(h.competencyScore)}%</TableCell>
+                      <TableCell>{Math.round(h.learningScore)}%</TableCell>
+                      <TableCell>{Math.round(h.trainingScore)}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* AI Insights */}
+        {perfData?.aiInsight && (
+          <Card className="border-purple-200 bg-purple-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-900">
+                <Award className="h-5 w-5" />
+                AI Insights
+              </CardTitle>
+              <CardDescription>Personalized insights based on your performance data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {perfData.aiInsight.strengthAreas?.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-green-700 mb-2">Your Strengths</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {perfData.aiInsight.strengthAreas.map((s, i) => (
+                      <Badge key={i} className="bg-green-100 text-green-700 border-green-200">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        {s}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {perfData.aiInsight.developmentAreas?.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-yellow-700 mb-2">Areas for Development</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {perfData.aiInsight.developmentAreas.map((d, i) => (
+                      <Badge key={i} className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                        <Target className="h-3 w-3 mr-1" />
+                        {d}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {perfData.aiInsight.recommendations?.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-blue-700 mb-2">Recommendations</h4>
+                  <ul className="space-y-1">
+                    {perfData.aiInsight.recommendations.map((r, i) => (
+                      <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-blue-500 mt-1">•</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recommendations */}
+        {perfData?.recommendations && perfData.recommendations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recommended for You</CardTitle>
+              <CardDescription>Courses and trainings to boost your growth</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {perfData.recommendations.map((rec, i) => (
+                  <div key={i} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className={
+                          rec.priority === "High" ? "border-red-300 text-red-700" :
+                          rec.priority === "Medium" ? "border-yellow-300 text-yellow-700" :
+                          "border-green-300 text-green-700"
+                        }>
+                          {rec.priority}
+                        </Badge>
+                        <Badge variant="outline">{rec.type}</Badge>
+                      </div>
+                      <h4 className="font-medium text-gray-900">{rec.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{rec.rationale}</p>
+                    </div>
+                    {(rec.linkedCourseId || rec.linkedTrainingId) && (
+                      <Button
+                        size="sm"
+                        className="ml-4 bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => {
+                          if (rec.linkedCourseId) {
+                            enrollCourseMutation.mutate(rec.linkedCourseId)
+                          } else if (rec.linkedTrainingId) {
+                            enrollTrainingMutation.mutate(rec.linkedTrainingId)
+                          }
+                        }}
+                      >
+                        Enroll
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Disclaimer */}
+        {perfData?.disclaimer && (
+          <p className="text-sm text-gray-500 text-center italic">{perfData.disclaimer}</p>
+        )}
+
+        {/* No data state */}
+        {!perfData?.summary && !isPerformanceSummaryLoading && (
+          <Card className="bg-gray-50">
+            <CardContent className="py-12 text-center">
+              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Performance Data Yet</h3>
+              <p className="text-gray-600">
+                Your performance summary will be available once you have completed some courses and trainings.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     )
   }

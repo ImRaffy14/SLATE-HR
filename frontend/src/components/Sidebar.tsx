@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Users, UserCheck, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban, Briefcase, Target, Award, Bell, GraduationCap } from "lucide-react"
+import { Users, UserCheck, BarChart3, LogOut, Menu, FileMinus2, BookPlus, RailSymbol, LaptopMinimalCheck, FolderKanban, Briefcase, Target, Award, GraduationCap } from "lucide-react"
 import { NavLink, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import toast from "react-hot-toast"
@@ -44,7 +44,7 @@ function Sidebar() {
     { id: "ess-learning", path: "/ess/learning", icon: <BookPlus size={20} />, label: "Learning" },
     { id: "ess-trainings", path: "/ess/trainings", icon: <GraduationCap size={20} />, label: "Trainings" },
     { id: "ess-achievements", path: "/ess/achievements", icon: <Award size={20} />, label: "Achievements" },
-    { id: "ess-notifications", path: "/ess/notifications", icon: <Bell size={20} />, label: "Notifications" },
+    { id: "ess-performance", path: "/ess/performance", icon: <FolderKanban size={20} />, label: "Performance" },
   ]
 
   const menuItems = [
@@ -75,7 +75,9 @@ function Sidebar() {
         {!collapsed && 
           <div className="rounded-full bg-gray-800 p-1 flex justify-center items-center">
             <img src={LOGO} alt="Logo" className="h-11 w-11 rounded-full" />
-            <h1 className="ml-3 text-lg font-bold text-gray-100 inline-block align-middle">Admin Panel</h1>
+            <h1 className="ml-3 text-lg font-bold text-gray-100 inline-block align-middle">
+              {isEmployee ? "Employee Panel" : "Admin Panel"}
+            </h1>
           </div>
         }
         <Button

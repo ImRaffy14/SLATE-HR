@@ -108,6 +108,10 @@ class LearningController {
             const result = await this.learningService.autoEnrollBasedOnGapService(req.body.employeeId);
             res.status(200).json({ status: "success", ...result });
         });
+        this.getAllEnrollments = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const enrollments = await this.learningService.getAllEnrollmentsService();
+            res.status(200).json({ status: "success", enrollments });
+        });
         this.getEmployeeEnrollments = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const enrollments = await this.learningService.getEmployeeEnrollmentsService(req.params.employeeId);
             res.status(200).json({ status: "success", enrollments });
@@ -151,8 +155,14 @@ class LearningController {
         // CERTIFICATE ENDPOINTS
         // ============================================
         this.generateCertificate = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-            const certificate = await this.learningService.generateCertificateService(req.params.id);
-            res.status(201).json({ status: "success", certificate });
+            const result = await this.learningService.generateCertificateService(req.params.id);
+            // Set headers for PDF download
+            const fileName = `Certificate-${result.certificate.certificateNumber}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            res.setHeader('Content-Length', result.pdfBuffer.length);
+            // Send PDF buffer as response
+            res.status(200).send(result.pdfBuffer);
         });
         this.getCertificate = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const certificate = await this.learningService.getCertificateService(req.params.id);

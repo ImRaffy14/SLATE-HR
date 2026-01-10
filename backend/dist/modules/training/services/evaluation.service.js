@@ -33,6 +33,9 @@ class TrainingEvaluationService {
         if (data.trainerRating && (data.trainerRating < 1 || data.trainerRating > 5)) {
             throw new appError_1.AppError('Trainer rating must be between 1 and 5', 400);
         }
+        if (data.employeePerformanceRating && (data.employeePerformanceRating < 1 || data.employeePerformanceRating > 5)) {
+            throw new appError_1.AppError('Employee performance rating must be between 1 and 5', 400);
+        }
         // Check if evaluation already exists
         const existing = await prisma_1.default.trainingEvaluation.findUnique({
             where: { enrollmentId }
@@ -130,6 +133,69 @@ class TrainingEvaluationService {
             employee: e.employee,
             evaluation: e.evaluation
         }));
+    }
+    /**
+     * Submit employee performance rating (by HR/Manager/Trainer)
+     */
+    async submitEmployeePerformanceRating(enrollmentId, data) {
+        // Validate enrollment exists
+        const enrollment = await prisma_1.default.trainingEnrollment.findUnique({
+            where: { id: enrollmentId },
+            include: {
+                training: true,
+                attendance: true
+            }
+        });
+        if (!enrollment) {
+            throw new appError_1.AppError('Enrollment not found', 404);
+        }
+        // Check if attendance is present
+        if (!enrollment.attendance || enrollment.attendance.status === 'ABSENT') {
+            throw new appError_1.AppError('Cannot rate employee without attendance', 400);
+        }
+        // Validate rating (1-5)
+        if (data.employeePerformanceRating < 1 || data.employeePerformanceRating > 5) {
+            throw new appError_1.AppError('Employee performance rating must be between 1 and 5', 400);
+        }
+        // Check if evaluation exists
+        const existing = await prisma_1.default.trainingEvaluation.findUnique({
+            where: { enrollmentId }
+        });
+        if (existing) {
+            // Update existing evaluation with employee performance rating
+            return prisma_1.default.trainingEvaluation.update({
+                where: { enrollmentId },
+                data: {
+                    employeePerformanceRating: data.employeePerformanceRating,
+                    employeeImprovementComments: data.employeeImprovementComments
+                },
+                include: {
+                    enrollment: {
+                        include: {
+                            employee: true,
+                            training: true
+                        }
+                    }
+                }
+            });
+        }
+        // Create new evaluation with only employee performance rating
+        return prisma_1.default.trainingEvaluation.create({
+            data: {
+                enrollmentId,
+                trainingRating: 0, // Placeholder, will be updated when employee submits their evaluation
+                employeePerformanceRating: data.employeePerformanceRating,
+                employeeImprovementComments: data.employeeImprovementComments
+            },
+            include: {
+                enrollment: {
+                    include: {
+                        employee: true,
+                        training: true
+                    }
+                }
+            }
+        });
     }
     /**
      * Calculate training effectiveness score

@@ -40,6 +40,7 @@ router.post("/quizzes/:id/submit", bearerAuth_1.bearerAuth, learningController.s
 // ============================================
 router.post("/enrollments", bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR, client_1.UserRole.MANAGER]), learningController.enrollEmployee);
 router.post("/enrollments/auto-enroll", bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR, client_1.UserRole.MANAGER]), learningController.autoEnrollBasedOnGap);
+router.get("/enrollments", bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR, client_1.UserRole.MANAGER]), learningController.getAllEnrollments);
 router.get("/enrollments/employee/:employeeId", bearerAuth_1.bearerAuth, learningController.getEmployeeEnrollments);
 router.get("/enrollments/:id", bearerAuth_1.bearerAuth, learningController.getEnrollmentDetails);
 router.patch("/enrollments/:id/progress", bearerAuth_1.bearerAuth, learningController.updateEnrollmentProgress);

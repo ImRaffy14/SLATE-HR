@@ -29,7 +29,22 @@ class CompetencyUpdateService {
                     include: {
                         employee: true,
                         attendance: true,
-                        evaluation: true
+                        evaluation: {
+                            select: {
+                                id: true,
+                                enrollmentId: true,
+                                trainingRating: true,
+                                trainingComments: true,
+                                trainerRating: true,
+                                trainerComments: true,
+                                employeePerformanceRating: true,
+                                employeeImprovementComments: true,
+                                effectivenessScore: true,
+                                submittedAt: true,
+                                createdAt: true,
+                                updatedAt: true
+                            }
+                        }
                     }
                 }
             }
@@ -55,7 +70,9 @@ class CompetencyUpdateService {
             }
             // Process each tagged competency
             for (const competencyId of training.taggedCompetencies) {
-                const update = await this.updateEmployeeCompetency(enrollment.employeeId, competencyId, trainingId, enrollment.evaluation.effectivenessScore || 0);
+                // Calculate effectiveness score considering employee performance rating
+                const effectivenessScore = this.calculateEffectivenessScoreWithPerformanceRating(enrollment.evaluation?.effectivenessScore || 0, enrollment.evaluation?.employeePerformanceRating || undefined);
+                const update = await this.updateEmployeeCompetency(enrollment.employeeId, competencyId, trainingId, effectivenessScore, enrollment.evaluation?.employeePerformanceRating || undefined);
                 if (update) {
                     updates.push(update);
                 }
@@ -68,9 +85,21 @@ class CompetencyUpdateService {
         };
     }
     /**
+     * Calculate effectiveness score considering employee performance rating
+     */
+    calculateEffectivenessScoreWithPerformanceRating(baseEffectivenessScore, employeePerformanceRating) {
+        if (!employeePerformanceRating) {
+            return baseEffectivenessScore;
+        }
+        // Weight: 60% base effectiveness, 40% employee performance rating
+        // Employee performance rating (1-5) scaled to 0-100
+        const performanceScore = (employeePerformanceRating / 5) * 100;
+        return (baseEffectivenessScore * 0.6) + (performanceScore * 0.4);
+    }
+    /**
      * Update employee competency based on training completion
      */
-    async updateEmployeeCompetency(employeeId, competencyId, trainingId, effectivenessScore) {
+    async updateEmployeeCompetency(employeeId, competencyId, trainingId, effectivenessScore, employeePerformanceRating) {
         // Get employee competency record
         const employeeCompetency = await prisma_1.default.employeeCompetency.findFirst({
             where: {

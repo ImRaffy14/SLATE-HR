@@ -17,6 +17,8 @@ const training_enrollment_routes_1 = __importDefault(require("./v1/training-enro
 const training_attendance_routes_1 = __importDefault(require("./v1/training-attendance.routes"));
 const training_evaluation_routes_1 = __importDefault(require("./v1/training-evaluation.routes"));
 const training_reports_routes_1 = __importDefault(require("./v1/training-reports.routes"));
+const ess_routes_1 = __importDefault(require("../modules/ess/routes/ess.routes"));
+const succession_routes_1 = __importDefault(require("../modules/succession/routes/succession.routes"));
 const verifyToken_1 = require("../middlewares/verifyToken");
 const router = express_1.default.Router();
 // V1 Routes
@@ -29,8 +31,10 @@ router.use('/job-role', verifyToken_1.verifyToken, jobRole_routes_1.default);
 router.use('/employee', verifyToken_1.verifyToken, employee_routes_1.default);
 router.use('/learning', verifyToken_1.verifyToken, learning_routes_1.default);
 router.use('/trainings', verifyToken_1.verifyToken, training_routes_1.default);
-router.use('/', verifyToken_1.verifyToken, training_enrollment_routes_1.default);
-router.use('/', verifyToken_1.verifyToken, training_attendance_routes_1.default);
-router.use('/', verifyToken_1.verifyToken, training_evaluation_routes_1.default);
-router.use('/', verifyToken_1.verifyToken, training_reports_routes_1.default);
+router.use('/training-enrollment', verifyToken_1.verifyToken, training_enrollment_routes_1.default);
+router.use('/training-attendance', verifyToken_1.verifyToken, training_attendance_routes_1.default);
+router.use('/training-evaluation', verifyToken_1.verifyToken, training_evaluation_routes_1.default);
+router.use('/reports', verifyToken_1.verifyToken, training_reports_routes_1.default);
+router.use('/ess', verifyToken_1.verifyToken, ess_routes_1.default);
+router.use('/succession', verifyToken_1.verifyToken, succession_routes_1.default);
 exports.default = router;

@@ -11,7 +11,10 @@ class TrainingEnrollmentController {
         this.createEnrollment = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const { trainingId, employeeId, enrollmentType } = req.body;
             const type = enrollmentType || client_1.EnrollmentType.SELF;
-            const enrollment = await this.enrollmentService.createEnrollment(trainingId, employeeId, type);
+            const userId = req.userId || req.user?.id;
+            // For manual enrollment (HR/Admin), pass userId as approvedBy
+            const approvedBy = type === client_1.EnrollmentType.MANUAL ? userId : undefined;
+            const enrollment = await this.enrollmentService.createEnrollment(trainingId, employeeId, type, approvedBy);
             res.status(201).json({ status: 'success', enrollment });
         });
         // Get employee's trainings
@@ -42,6 +45,16 @@ class TrainingEnrollmentController {
             const { rejectionReason } = req.body;
             const enrollment = await this.enrollmentService.rejectEnrollment(req.params.id, userId, rejectionReason);
             res.status(200).json({ status: 'success', enrollment });
+        });
+        // Get all enrollments for a training
+        this.getTrainingEnrollments = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const filters = {
+                status: req.query.status,
+                page: req.query.page ? parseInt(req.query.page) : undefined,
+                limit: req.query.limit ? parseInt(req.query.limit) : undefined
+            };
+            const result = await this.enrollmentService.getTrainingEnrollments(req.params.trainingId, filters);
+            res.status(200).json({ status: 'success', ...result });
         });
         // Get pending enrollments
         this.getPendingEnrollments = (0, asyncHandler_1.asyncHandler)(async (req, res) => {

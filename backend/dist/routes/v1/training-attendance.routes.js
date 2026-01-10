@@ -10,9 +10,8 @@ const roleAuth_1 = require("../../middlewares/roleAuth");
 const client_1 = require("@prisma/client");
 const router = express_1.default.Router();
 const attendanceController = new attendance_controller_1.TrainingAttendanceController();
-// Attendance endpoints
-router.post('/trainings/:id/qr', bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR]), attendanceController.generateQRCode);
-router.post('/trainings/:id/attendance/scan', bearerAuth_1.bearerAuth, attendanceController.scanQRCode);
-router.get('/trainings/:id/attendance', bearerAuth_1.bearerAuth, attendanceController.getAttendanceList);
-router.patch('/training-attendance/:id', bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR]), attendanceController.updateAttendance);
+// Attendance update endpoint (not nested under trainings)
+router.patch('/:id', bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR]), attendanceController.updateAttendance);
+// Create or update attendance by enrollmentId (HR/Admin/Manager only)
+router.post('/enrollment/:enrollmentId', bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR, client_1.UserRole.MANAGER]), attendanceController.createOrUpdateAttendanceByEnrollment);
 exports.default = router;

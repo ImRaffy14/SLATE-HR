@@ -350,7 +350,14 @@ export default function LearningManagement() {
     mutationFn: generateCertificate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["enrollmentDetails"] })
-      toast.success("Certificate generated successfully!")
+      queryClient.invalidateQueries({ queryKey: ["all-enrollments"] })
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      queryClient.invalidateQueries({ queryKey: ["course-content"] })
+      // Refresh enrollment details to show certificate
+      if (selectedEnrollment?.id) {
+        queryClient.refetchQueries({ queryKey: ["enrollmentDetails", selectedEnrollment.id] })
+      }
+      toast.success("Certificate generated and downloaded successfully! It has also been added to the employee's achievements.")
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to generate certificate")
@@ -2153,7 +2160,16 @@ export default function LearningManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">{enrollmentDetails.course?.title}</h3>
-                  <p className="text-sm text-gray-600">Progress: {enrollmentDetails.completionPercentage}%</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-sm text-gray-600">Progress: {enrollmentDetails.completionPercentage}%</p>
+                    {enrollmentDetails.finalGrade !== null && enrollmentDetails.finalGrade !== undefined ? (
+                      <p className="text-sm font-medium text-gray-900">
+                        Final Grade: <span className="text-blue-600">{enrollmentDetails.finalGrade.toFixed(1)}%</span>
+                      </p>
+                    ) : enrollmentDetails.status === EnrollmentStatus.COMPLETED ? (
+                      <p className="text-sm text-gray-500 italic">Final grade not calculated yet</p>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   {enrollmentDetails.status === EnrollmentStatus.COMPLETED && (

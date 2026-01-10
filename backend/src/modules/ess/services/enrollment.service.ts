@@ -3,10 +3,12 @@ import { AppError } from '../../../utils/appError';
 import { LearningService } from '../../../services/learning.service';
 import { TrainingEnrollmentService } from '../../training/services/enrollment.service';
 import { EnrollmentType } from '@prisma/client';
+import { NotificationService } from '../services/notification.service';
 
 export class ESSEnrollmentService {
   private learningService = new LearningService();
   private trainingEnrollmentService = new TrainingEnrollmentService();
+  private notificationService = new NotificationService();
 
   /**
    * Self-enroll in a course
@@ -75,6 +77,23 @@ export class ESSEnrollmentService {
       }
     });
 
+    // Create notification for employee
+    try {
+      await this.notificationService.createNotification(
+        employeeId,
+        'COURSE_DUE',
+        `You have successfully enrolled in the course: ${course.title}. Please start the course to begin learning.`,
+        {
+          enrollmentId: enrollment.id,
+          courseId: course.id,
+          courseTitle: course.title
+        }
+      );
+    } catch (error) {
+      // Don't fail enrollment if notification creation fails
+      console.error('Failed to create notification:', error);
+    }
+
     return enrollment;
   }
 
@@ -99,6 +118,23 @@ export class ESSEnrollmentService {
       employeeId,
       EnrollmentType.SELF
     );
+
+    // Create notification for employee
+    try {
+      await this.notificationService.createNotification(
+        employeeId,
+        'TRAINING_APPROVAL',
+        `Your enrollment request for training: ${enrollment.training.title} has been submitted. Awaiting approval.`,
+        {
+          enrollmentId: enrollment.id,
+          trainingId: enrollment.training.id,
+          trainingTitle: enrollment.training.title
+        }
+      );
+    } catch (error) {
+      // Don't fail enrollment if notification creation fails
+      console.error('Failed to create notification:', error);
+    }
 
     return enrollment;
   }

@@ -353,8 +353,34 @@ export const getQuizAttempt = async (quizId: string, enrollmentId: string) => {
 
 export const generateCertificate = async (enrollmentId: string) => {
   try {
-    const result = await axiosInstance.post(`/api/v1/learning/enrollments/${enrollmentId}/certificate`, {});
-    return result.data.certificate;
+    const result = await axiosInstance.post(`/api/v1/learning/enrollments/${enrollmentId}/certificate`, {}, {
+      responseType: 'blob', // Important: handle binary data (PDF)
+    });
+    
+    // Create blob URL and trigger download
+    const blob = new Blob([result.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Get filename from Content-Disposition header or use default
+    const contentDisposition = result.headers['content-disposition'];
+    let filename = 'Certificate.pdf';
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    // Return success indicator
+    return { success: true, message: 'Certificate generated and downloaded successfully' };
   } catch (error) {
     handleError(error);
   }

@@ -11,7 +11,7 @@ const client_1 = require("@prisma/client");
 const router = express_1.default.Router();
 const enrollmentController = new enrollment_controller_1.TrainingEnrollmentController();
 // Enrollment endpoints
-router.post('/trainings/:id/enroll', bearerAuth_1.bearerAuth, enrollmentController.createEnrollment);
+router.get('/training/:trainingId', bearerAuth_1.bearerAuth, enrollmentController.getTrainingEnrollments);
 router.get('/employee/:id/trainings', bearerAuth_1.bearerAuth, enrollmentController.getEmployeeTrainings);
 router.get('/pending', bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR, client_1.UserRole.MANAGER]), enrollmentController.getPendingEnrollments);
 router.patch('/:id/approve', bearerAuth_1.bearerAuth, (0, roleAuth_1.requireRole)([client_1.UserRole.ADMIN, client_1.UserRole.HR, client_1.UserRole.MANAGER]), enrollmentController.approveEnrollment);

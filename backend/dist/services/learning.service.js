@@ -702,7 +702,7 @@ class LearningService {
         if (existingEnrollment) {
             throw new appError_1.AppError('Employee is already enrolled in this course', 400);
         }
-        return prisma_1.default.enrollment.create({
+        const enrollment = await prisma_1.default.enrollment.create({
             data: {
                 employeeId: data.employeeId,
                 courseId: data.courseId,
@@ -727,6 +727,27 @@ class LearningService {
                 }
             }
         });
+        // Create notification for employee
+        try {
+            await prisma_1.default.notification.create({
+                data: {
+                    employeeId: data.employeeId,
+                    type: 'COURSE_DUE',
+                    message: `You have been enrolled in the course: ${course.title}. Please start the course to begin learning.`,
+                    metadata: {
+                        enrollmentId: enrollment.id,
+                        courseId: course.id,
+                        courseTitle: course.title
+                    },
+                    isRead: false
+                }
+            });
+        }
+        catch (error) {
+            // Don't fail enrollment if notification creation fails
+            console.error('Failed to create notification:', error);
+        }
+        return enrollment;
     }
     async autoEnrollBasedOnGapService(employeeId) {
         const employee = await prisma_1.default.employee.findUnique({
@@ -837,6 +858,51 @@ class LearningService {
             where: { id: enrollmentId }
         });
     }
+    async getAllEnrollmentsService() {
+        return prisma_1.default.enrollment.findMany({
+            include: {
+                employee: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        employeeId: true,
+                        department: true,
+                        position: true,
+                    }
+                },
+                course: {
+                    include: {
+                        category: true,
+                        materials: {
+                            select: {
+                                id: true,
+                                title: true,
+                            }
+                        },
+                        quizzes: {
+                            select: {
+                                id: true,
+                                title: true,
+                            }
+                        }
+                    }
+                },
+                quizAttempts: {
+                    select: {
+                        id: true,
+                        quizId: true,
+                        score: true,
+                        passed: true,
+                        locked: true,
+                    }
+                }
+            },
+            orderBy: {
+                enrolledAt: 'desc'
+            }
+        });
+    }
     async getEmployeeEnrollmentsService(employeeId) {
         const employee = await prisma_1.default.employee.findUnique({
             where: { id: employeeId }
@@ -910,11 +976,21 @@ class LearningService {
         }
         // Calculate progress
         const progress = await this.calculateProgressService(enrollmentId);
+        // Determine status based on current state
+        let status = enrollment.status;
+        if (status === 'NOT_STARTED') {
+            status = 'IN_PROGRESS';
+        }
+        else if (progress.percentage === 100 && status === 'IN_PROGRESS') {
+            status = 'COMPLETED';
+        }
         return prisma_1.default.enrollment.update({
             where: { id: enrollmentId },
             data: {
+                status,
                 completionPercentage: progress.percentage,
                 lastActivity: new Date(),
+                ...(status === 'COMPLETED' && !enrollment.completedAt && { completedAt: new Date() }),
             }
         });
     }
@@ -987,11 +1063,80 @@ class LearningService {
                     }
                 },
                 progressRecords: true,
-                quizAttempts: true
+                quizAttempts: true,
+                certificate: true,
+                employee: {
+                    select: {
+                        id: true,
+                        name: true,
+                        employeeId: true
+                    }
+                }
             }
         });
         if (!enrollment) {
             throw new appError_1.AppError('Enrollment not found', 404);
+        }
+        // Calculate and update finalGrade if missing but all quizzes are passed
+        if (enrollment.status === 'COMPLETED' && (enrollment.finalGrade === null || enrollment.finalGrade === undefined)) {
+            const totalQuizzes = enrollment.course?.quizzes?.length || 0;
+            const quizAttempts = enrollment.quizAttempts || [];
+            if (totalQuizzes > 0 && quizAttempts.length > 0) {
+                const passedQuizzes = quizAttempts.filter((a) => a.passed).length;
+                // If all quizzes are passed, calculate final grade
+                if (totalQuizzes === passedQuizzes && passedQuizzes > 0) {
+                    const totalScore = quizAttempts.reduce((sum, a) => sum + a.score, 0);
+                    const finalGrade = totalScore / quizAttempts.length;
+                    // Update enrollment with calculated final grade
+                    await prisma_1.default.enrollment.update({
+                        where: { id: enrollmentId },
+                        data: { finalGrade }
+                    });
+                    // Update local enrollment object for response
+                    enrollment.finalGrade = finalGrade;
+                }
+                else if (totalQuizzes === 0) {
+                    // If no quizzes, set finalGrade to 100
+                    await prisma_1.default.enrollment.update({
+                        where: { id: enrollmentId },
+                        data: { finalGrade: 100 }
+                    });
+                    enrollment.finalGrade = 100;
+                }
+            }
+            else if (totalQuizzes === 0) {
+                // If no quizzes, set finalGrade to 100
+                await prisma_1.default.enrollment.update({
+                    where: { id: enrollmentId },
+                    data: { finalGrade: 100 }
+                });
+                enrollment.finalGrade = 100;
+            }
+        }
+        // Remove correct answers from quiz questions if quiz hasn't been attempted
+        if (enrollment.course?.quizzes) {
+            enrollment.course.quizzes = enrollment.course.quizzes.map((quiz) => {
+                const attempt = enrollment.quizAttempts?.find((qa) => qa.quizId === quiz.id);
+                const isLocked = attempt?.locked || false;
+                // If quiz hasn't been attempted or is not locked, remove correct answers
+                if (!attempt || !isLocked) {
+                    return {
+                        ...quiz,
+                        questions: quiz.questions?.map((q) => {
+                            const choices = Array.isArray(q.choices) ? q.choices : [];
+                            return {
+                                ...q,
+                                correctAnswer: undefined,
+                                choices: choices.map((c) => ({
+                                    text: c.text,
+                                    isCorrect: undefined
+                                }))
+                            };
+                        })
+                    };
+                }
+                return quiz;
+            });
         }
         return enrollment;
     }
@@ -1034,7 +1179,10 @@ class LearningService {
             if (!answer) {
                 throw new appError_1.AppError(`Answer missing for question ${question.id}`, 400);
             }
-            const isCorrect = answer.answer === question.correctAnswer;
+            // Normalize answers for comparison (case-insensitive, trim whitespace)
+            const normalizedUserAnswer = String(answer.answer || '').trim().toLowerCase();
+            const normalizedCorrectAnswer = String(question.correctAnswer || '').trim().toLowerCase();
+            const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
             const points = isCorrect ? question.points : 0;
             totalScore += points;
             totalPoints += question.points;
@@ -1076,7 +1224,50 @@ class LearningService {
                 }
             });
             // Update enrollment progress
-            await this.updateEnrollmentProgressService(enrollmentId);
+            const updatedEnrollment = await this.updateEnrollmentProgressService(enrollmentId);
+            // Check if all quizzes are now passed and calculate final grade
+            // Fetch fresh enrollment data after attempt creation
+            const enrollmentWithAttempts = await prisma_1.default.enrollment.findUnique({
+                where: { id: enrollmentId },
+                include: {
+                    course: {
+                        include: {
+                            quizzes: true,
+                            materials: true
+                        }
+                    },
+                    quizAttempts: true,
+                    progressRecords: {
+                        where: { completed: true }
+                    }
+                }
+            });
+            if (enrollmentWithAttempts && enrollmentWithAttempts.course.quizzes.length > 0) {
+                const totalQuizzes = enrollmentWithAttempts.course.quizzes.length;
+                const passedQuizzes = enrollmentWithAttempts.quizAttempts.filter((a) => a.passed).length;
+                // If all quizzes are passed, calculate and update final grade (regardless of materials)
+                if (totalQuizzes === passedQuizzes && passedQuizzes > 0 && enrollmentWithAttempts.quizAttempts.length > 0) {
+                    const totalScore = enrollmentWithAttempts.quizAttempts.reduce((sum, a) => sum + a.score, 0);
+                    const finalGrade = totalScore / enrollmentWithAttempts.quizAttempts.length;
+                    // Check if all materials are also completed
+                    const totalMaterials = enrollmentWithAttempts.course.materials.length;
+                    const completedMaterials = enrollmentWithAttempts.progressRecords.length;
+                    const allMaterialsCompleted = totalMaterials === 0 || totalMaterials === completedMaterials;
+                    // Update final grade (always set when all quizzes passed)
+                    // Auto-complete if all quizzes passed AND all materials completed
+                    await prisma_1.default.enrollment.update({
+                        where: { id: enrollmentId },
+                        data: {
+                            finalGrade,
+                            ...(allMaterialsCompleted && {
+                                status: 'COMPLETED',
+                                completionPercentage: 100,
+                                completedAt: new Date()
+                            })
+                        }
+                    });
+                }
+            }
             return attempt;
         }
     }
@@ -1332,30 +1523,78 @@ class LearningService {
             throw new appError_1.AppError('Course must be completed before generating certificate', 400);
         }
         // Check if certificate already exists
-        const existing = await prisma_1.default.certificate.findUnique({
+        let certificate = await prisma_1.default.certificate.findUnique({
             where: { enrollmentId }
         });
-        if (existing) {
-            return existing;
+        let pdfBuffer;
+        let pdfUrl;
+        if (certificate) {
+            // Certificate already exists, use existing URL
+            pdfUrl = certificate.pdfUrl;
+            // Generate PDF buffer for download (always regenerate for download)
+            pdfBuffer = await (0, certificateGenerator_1.generateCertificatePDF)({
+                employeeName: enrollment.employee.name,
+                courseTitle: enrollment.course.title,
+                courseId: enrollment.course.courseId,
+                completionDate: enrollment.completedAt || new Date(),
+                certificateNumber: certificate.certificateNumber,
+                finalGrade: enrollment.finalGrade || undefined,
+            });
         }
-        // Generate certificate number
-        const certificateNumber = `CERT-${enrollment.course.courseId}-${enrollment.employee.employeeId}-${Date.now()}`;
-        // Generate and upload certificate PDF
-        const pdfUrl = await (0, certificateGenerator_1.generateAndUploadCertificate)({
-            employeeName: enrollment.employee.name,
-            courseTitle: enrollment.course.title,
-            courseId: enrollment.course.courseId,
-            completionDate: enrollment.completedAt || new Date(),
-            certificateNumber,
-            finalGrade: enrollment.finalGrade || undefined,
-        });
-        return prisma_1.default.certificate.create({
-            data: {
-                enrollmentId,
+        else {
+            // Generate certificate number
+            const certificateNumber = `CERT-${enrollment.course.courseId}-${enrollment.employee.employeeId}-${Date.now()}`;
+            // Generate PDF buffer
+            pdfBuffer = await (0, certificateGenerator_1.generateCertificatePDF)({
+                employeeName: enrollment.employee.name,
+                courseTitle: enrollment.course.title,
+                courseId: enrollment.course.courseId,
+                completionDate: enrollment.completedAt || new Date(),
                 certificateNumber,
-                pdfUrl,
+                finalGrade: enrollment.finalGrade || undefined,
+            });
+            // Upload to Cloudinary
+            const uploadResult = await (0, fileUpload_service_1.uploadFile)(pdfBuffer, 'certificates', 'application/pdf');
+            pdfUrl = uploadResult.url;
+            // Create certificate record
+            certificate = await prisma_1.default.certificate.create({
+                data: {
+                    enrollmentId,
+                    certificateNumber,
+                    pdfUrl,
+                }
+            });
+        }
+        // Automatically create AchievementUpload record (auto-approved) if it doesn't exist
+        // This handles both new certificates and existing certificates that might not have achievements
+        const existingAchievement = await prisma_1.default.achievementUpload.findFirst({
+            where: {
+                employeeId: enrollment.employeeId,
+                fileUrl: pdfUrl
             }
         });
+        if (!existingAchievement) {
+            // Get first tagged competency if available (optional link)
+            // taggedCompetencies is an array of ObjectId strings, not a relation
+            const competencyId = (enrollment.course.taggedCompetencies && Array.isArray(enrollment.course.taggedCompetencies) && enrollment.course.taggedCompetencies.length > 0)
+                ? enrollment.course.taggedCompetencies[0]
+                : null;
+            await prisma_1.default.achievementUpload.create({
+                data: {
+                    employeeId: enrollment.employeeId,
+                    title: `Certificate of Completion - ${enrollment.course.title}`,
+                    description: `Certificate for completing course: ${enrollment.course.title}${enrollment.finalGrade ? ` (Grade: ${enrollment.finalGrade.toFixed(1)}%)` : ''}`,
+                    fileUrl: pdfUrl,
+                    competencyId: competencyId || null,
+                    status: 'Approved', // Auto-approve certificates generated by the system
+                }
+            });
+        }
+        return {
+            certificate,
+            pdfBuffer,
+            pdfUrl
+        };
     }
     async getCertificateService(enrollmentId) {
         return prisma_1.default.certificate.findUnique({
@@ -1414,10 +1653,12 @@ class LearningService {
             filteredEnrollments = enrollments.filter(e => e.employee.department === filters.department);
         }
         const totalCompleted = filteredEnrollments.length;
-        const totalPassed = filteredEnrollments.filter(e => (e.finalGrade || 0) >= 70).length;
-        const totalFailed = totalCompleted - totalPassed;
-        const averageScore = filteredEnrollments.length > 0
-            ? filteredEnrollments.reduce((sum, e) => sum + (e.finalGrade || 0), 0) / filteredEnrollments.length
+        // Only count enrollments with valid finalGrade (not null/undefined)
+        const enrollmentsWithGrade = filteredEnrollments.filter((e) => e.finalGrade !== null && e.finalGrade !== undefined);
+        const totalPassed = enrollmentsWithGrade.filter(e => e.finalGrade >= 70).length;
+        const totalFailed = enrollmentsWithGrade.filter(e => e.finalGrade < 70).length;
+        const averageScore = enrollmentsWithGrade.length > 0
+            ? enrollmentsWithGrade.reduce((sum, e) => sum + e.finalGrade, 0) / enrollmentsWithGrade.length
             : 0;
         return {
             totalCompleted,

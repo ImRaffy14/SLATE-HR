@@ -24,6 +24,9 @@ class TrainingReportService {
                 }
             }
         };
+        if (filters?.trainingId) {
+            where.id = filters.trainingId;
+        }
         if (filters?.startDate || filters?.endDate) {
             where.AND = [];
             if (filters.startDate) {
@@ -111,19 +114,103 @@ class TrainingReportService {
      * Get attendance summary report
      */
     async getAttendanceSummaryReport(filters) {
-        const where = {};
+        // If trainingId is provided, get all enrollments for that training (like attendance tab does)
         if (filters?.trainingId) {
-            where.trainingId = filters.trainingId;
+            const training = await prisma_1.default.training.findUnique({
+                where: { id: filters.trainingId },
+                include: {
+                    enrollments: {
+                        where: {
+                            status: 'APPROVED'
+                        },
+                        include: {
+                            employee: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    department: true
+                                }
+                            },
+                            attendance: true,
+                            evaluation: {
+                                select: {
+                                    employeePerformanceRating: true,
+                                    employeeImprovementComments: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            if (!training) {
+                return {
+                    summary: {
+                        total: 0,
+                        present: 0,
+                        late: 0,
+                        absent: 0,
+                        attendanceRate: '0.00'
+                    },
+                    details: []
+                };
+            }
+            // Map enrollments to attendance format (default to ABSENT if no attendance record)
+            const attendanceData = training.enrollments.map(enrollment => ({
+                enrollment,
+                employee: enrollment.employee,
+                training: {
+                    id: training.id,
+                    title: training.title,
+                    startDate: training.startDate,
+                    endDate: training.endDate
+                },
+                attendance: enrollment.attendance || {
+                    status: 'ABSENT',
+                    timeIn: null,
+                    timeOut: null
+                },
+                evaluation: enrollment.evaluation
+            }));
+            // Filter by department if provided
+            const filtered = filters?.department
+                ? attendanceData.filter(a => a.employee.department === filters.department)
+                : attendanceData;
+            // Aggregate by status
+            const summary = {
+                total: filtered.length,
+                present: filtered.filter(a => a.attendance.status === 'PRESENT').length,
+                late: filtered.filter(a => a.attendance.status === 'LATE').length,
+                absent: filtered.filter(a => a.attendance.status === 'ABSENT').length,
+                attendanceRate: filtered.length > 0
+                    ? ((filtered.filter(a => a.attendance.status === 'PRESENT' || a.attendance.status === 'LATE').length / filtered.length) * 100).toFixed(2)
+                    : '0.00'
+            };
+            return {
+                summary,
+                details: filtered.map(a => ({
+                    employee: a.employee,
+                    training: a.training,
+                    status: a.attendance.status,
+                    timeIn: a.attendance.timeIn,
+                    timeOut: a.attendance.timeOut,
+                    performanceRating: a.evaluation?.employeePerformanceRating,
+                    improvementComments: a.evaluation?.employeeImprovementComments
+                }))
+            };
         }
+        // Original logic for date range filtering (when no specific trainingId)
+        const where = {};
         if (filters?.startDate || filters?.endDate) {
-            where.training = {
-                AND: []
+            where.enrollment = {
+                training: {
+                    AND: []
+                }
             };
             if (filters.startDate) {
-                where.training.AND.push({ startDate: { gte: filters.startDate } });
+                where.enrollment.training.AND.push({ startDate: { gte: filters.startDate } });
             }
             if (filters.endDate) {
-                where.training.AND.push({ endDate: { lte: filters.endDate } });
+                where.enrollment.training.AND.push({ endDate: { lte: filters.endDate } });
             }
         }
         const attendances = await prisma_1.default.trainingAttendance.findMany({
@@ -144,6 +231,12 @@ class TrainingReportService {
                                 title: true,
                                 startDate: true,
                                 endDate: true
+                            }
+                        },
+                        evaluation: {
+                            select: {
+                                employeePerformanceRating: true,
+                                employeeImprovementComments: true
                             }
                         }
                     }
@@ -171,7 +264,9 @@ class TrainingReportService {
                 training: a.enrollment.training,
                 status: a.status,
                 timeIn: a.timeIn,
-                timeOut: a.timeOut
+                timeOut: a.timeOut,
+                performanceRating: a.enrollment.evaluation?.employeePerformanceRating,
+                improvementComments: a.enrollment.evaluation?.employeeImprovementComments
             }))
         };
     }
@@ -244,8 +339,31 @@ class TrainingReportService {
             }),
             prisma_1.default.trainingCompetencyImpact.count({ where })
         ]);
+        // Fetch evaluation data for each impact to get performance ratings
+        const impactsWithRatings = await Promise.all(impacts.map(async (impact) => {
+            const enrollment = await prisma_1.default.trainingEnrollment.findFirst({
+                where: {
+                    trainingId: impact.trainingId,
+                    employeeId: impact.employeeId,
+                    status: 'APPROVED'
+                },
+                include: {
+                    evaluation: {
+                        select: {
+                            employeePerformanceRating: true,
+                            employeeImprovementComments: true
+                        }
+                    }
+                }
+            });
+            return {
+                ...impact,
+                performanceRating: enrollment?.evaluation?.employeePerformanceRating,
+                improvementComments: enrollment?.evaluation?.employeeImprovementComments
+            };
+        }));
         return {
-            impacts,
+            impacts: impactsWithRatings,
             pagination: {
                 page,
                 limit,
@@ -268,6 +386,9 @@ class TrainingReportService {
                 }
             }
         };
+        if (filters?.trainingId) {
+            where.id = filters.trainingId;
+        }
         if (filters?.trainerId) {
             where.trainerId = filters.trainerId;
         }

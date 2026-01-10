@@ -42,6 +42,7 @@ class TrainingAttendanceService {
         });
         return {
             qrCode: qrCodeDataUrl,
+            qrCodeString: qrCodeString,
             expiresAt: qrCodeExpiresAt
         };
     }
@@ -131,7 +132,13 @@ class TrainingAttendanceService {
                                 position: true
                             }
                         },
-                        attendance: true
+                        attendance: true,
+                        evaluation: {
+                            select: {
+                                employeePerformanceRating: true,
+                                employeeImprovementComments: true
+                            }
+                        }
                     }
                 }
             }
@@ -147,7 +154,11 @@ class TrainingAttendanceService {
                 timeIn: null,
                 timeOut: null,
                 isLocked: false
-            }
+            },
+            evaluation: enrollment.evaluation ? {
+                employeePerformanceRating: enrollment.evaluation.employeePerformanceRating,
+                employeeImprovementComments: enrollment.evaluation.employeeImprovementComments
+            } : undefined
         }));
     }
     /**
@@ -175,6 +186,70 @@ class TrainingAttendanceService {
                 }
             }
         });
+    }
+    /**
+     * Create or update attendance manually by enrollmentId (HR/Admin only)
+     */
+    async createOrUpdateAttendanceByEnrollment(enrollmentId, data) {
+        // Get enrollment with training info
+        const enrollment = await prisma_1.default.trainingEnrollment.findUnique({
+            where: { id: enrollmentId },
+            include: {
+                training: true,
+                employee: true
+            }
+        });
+        if (!enrollment) {
+            throw new appError_1.AppError('Enrollment not found', 404);
+        }
+        if (enrollment.status !== 'APPROVED') {
+            throw new appError_1.AppError('Only approved enrollments can have attendance records', 400);
+        }
+        // Check if attendance already exists
+        const existingAttendance = await prisma_1.default.trainingAttendance.findUnique({
+            where: { enrollmentId }
+        });
+        if (existingAttendance) {
+            if (existingAttendance.isLocked) {
+                throw new appError_1.AppError('Attendance is locked and cannot be modified', 400);
+            }
+            // Update existing attendance
+            return prisma_1.default.trainingAttendance.update({
+                where: { id: existingAttendance.id },
+                data: {
+                    status: data.status,
+                    timeIn: data.timeIn || existingAttendance.timeIn || (data.status !== 'ABSENT' ? new Date() : undefined),
+                    location: data.location || existingAttendance.location
+                },
+                include: {
+                    enrollment: {
+                        include: {
+                            employee: true,
+                            training: true
+                        }
+                    }
+                }
+            });
+        }
+        else {
+            // Create new attendance record
+            return prisma_1.default.trainingAttendance.create({
+                data: {
+                    enrollmentId: enrollment.id,
+                    status: data.status,
+                    timeIn: data.status !== 'ABSENT' ? (data.timeIn || new Date()) : undefined,
+                    location: data.location
+                },
+                include: {
+                    enrollment: {
+                        include: {
+                            employee: true,
+                            training: true
+                        }
+                    }
+                }
+            });
+        }
     }
     /**
      * Lock attendance after training ends

@@ -21,6 +21,11 @@ class TrainingEvaluationController {
             const evaluations = await this.evaluationService.getTrainingEvaluations(req.params.id);
             res.status(200).json({ status: 'success', evaluations });
         });
+        // Submit employee performance rating (by HR/Manager/Trainer)
+        this.submitEmployeePerformanceRating = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const evaluation = await this.evaluationService.submitEmployeePerformanceRating(req.params.enrollmentId, req.body);
+            res.status(201).json({ status: 'success', evaluation });
+        });
     }
 }
 exports.TrainingEvaluationController = TrainingEvaluationController;

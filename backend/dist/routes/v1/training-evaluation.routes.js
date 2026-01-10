@@ -9,7 +9,7 @@ const bearerAuth_1 = require("../../middlewares/bearerAuth");
 const router = express_1.default.Router();
 const evaluationController = new evaluation_controller_1.TrainingEvaluationController();
 // Evaluation endpoints
-router.post('/training-evaluation/:enrollmentId', bearerAuth_1.bearerAuth, evaluationController.submitEvaluation);
-router.get('/training-evaluation/:enrollmentId', bearerAuth_1.bearerAuth, evaluationController.getEvaluation);
-router.get('/trainings/:id/evaluations', bearerAuth_1.bearerAuth, evaluationController.getTrainingEvaluations);
+router.post('/:enrollmentId', bearerAuth_1.bearerAuth, evaluationController.submitEvaluation);
+router.get('/:enrollmentId', bearerAuth_1.bearerAuth, evaluationController.getEvaluation);
+router.post('/:enrollmentId/employee-performance', bearerAuth_1.bearerAuth, evaluationController.submitEmployeePerformanceRating);
 exports.default = router;

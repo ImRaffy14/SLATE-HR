@@ -77,13 +77,24 @@ export interface ESSDashboard {
     endDate: string;
     durationHours: number;
   }>;
-  readinessScore: number | null;
-  successionPlan: {
-    readiness: number;
-    comments?: string;
-    developmentActions?: string;
-    updatedAt: string;
-  } | null;
+  succession: {
+    talentPools: Array<{
+      id: string;
+      roleName: string;
+      overallScore: number | null;
+      readinessStatus: string;
+      riskLevel: string | null;
+    }>;
+    idps: Array<{
+      id: string;
+      targetRoleName: string;
+      status: string;
+      progress: number;
+      totalGoals: number;
+      completedGoals: number;
+    }>;
+    readinessScore: number | null;
+  };
 }
 
 export interface CareerPath {

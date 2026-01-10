@@ -9,6 +9,7 @@ class TrainingReportController {
         // Get training hours report
         this.getTrainingHoursReport = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const filters = {
+                trainingId: req.query.trainingId,
                 employeeId: req.query.employeeId,
                 department: req.query.department,
                 startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
@@ -47,6 +48,7 @@ class TrainingReportController {
         // Get trainer effectiveness report
         this.getTrainerEffectivenessReport = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const filters = {
+                trainingId: req.query.trainingId,
                 trainerId: req.query.trainerId,
                 startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
                 endDate: req.query.endDate ? new Date(req.query.endDate) : undefined

@@ -27,6 +27,17 @@ class TrainingAttendanceController {
             const attendance = await this.attendanceService.updateAttendance(req.params.id, req.body);
             res.status(200).json({ status: 'success', attendance });
         });
+        // Create or update attendance by enrollmentId (HR/Admin/Manager only)
+        this.createOrUpdateAttendanceByEnrollment = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const { enrollmentId } = req.params;
+            const { status, timeIn, location } = req.body;
+            const attendance = await this.attendanceService.createOrUpdateAttendanceByEnrollment(enrollmentId, {
+                status,
+                timeIn: timeIn ? new Date(timeIn) : undefined,
+                location
+            });
+            res.status(200).json({ status: 'success', attendance });
+        });
     }
 }
 exports.TrainingAttendanceController = TrainingAttendanceController;

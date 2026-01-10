@@ -13,6 +13,8 @@ import trainingAttendance from './v1/training-attendance.routes';
 import trainingEvaluation from './v1/training-evaluation.routes';
 import trainingReports from './v1/training-reports.routes';
 import ess from '../modules/ess/routes/ess.routes';
+import succession from '../modules/succession/routes/succession.routes';
+import performance from '../modules/performance/routes/performance.routes';
 import { verifyToken } from '../middlewares/verifyToken';
 
 const router = express.Router();
@@ -32,7 +34,8 @@ router.use('/training-attendance', verifyToken, trainingAttendance);
 router.use('/training-evaluation', verifyToken, trainingEvaluation);
 router.use('/reports', verifyToken, trainingReports);
 router.use('/ess', verifyToken, ess);
-
+router.use('/succession', verifyToken, succession);
+router.use('/performance', verifyToken, performance);
 
 export default router;
     

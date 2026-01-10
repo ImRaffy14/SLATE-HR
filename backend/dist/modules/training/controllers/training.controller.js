@@ -1,8 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TrainingController = void 0;
 const training_service_1 = require("../services/training.service");
 const asyncHandler_1 = require("../../../utils/asyncHandler");
+const prisma_1 = __importDefault(require("../../../config/prisma"));
 class TrainingController {
     constructor() {
         this.trainingService = new training_service_1.TrainingService();
@@ -53,6 +57,20 @@ class TrainingController {
         this.suggestTrainings = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
             const trainings = await this.trainingService.suggestTrainingsForEmployee(req.params.employeeId);
             res.status(200).json({ status: 'success', trainings });
+        });
+        // Get all trainers
+        this.getTrainers = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const trainers = await prisma_1.default.trainer.findMany({
+                orderBy: { name: 'asc' }
+            });
+            res.status(200).json({ status: 'success', trainers });
+        });
+        // Get all venues
+        this.getVenues = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+            const venues = await prisma_1.default.venue.findMany({
+                orderBy: { name: 'asc' }
+            });
+            res.status(200).json({ status: 'success', venues });
         });
     }
 }

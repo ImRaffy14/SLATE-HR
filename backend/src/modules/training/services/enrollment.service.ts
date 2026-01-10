@@ -1,8 +1,11 @@
 import prisma from '../../../config/prisma';
 import { AppError } from '../../../utils/appError';
 import { TrainingEnrollmentStatus, EnrollmentType } from '@prisma/client';
+import { NotificationService } from '../../ess/services/notification.service';
 
 export class TrainingEnrollmentService {
+  private notificationService = new NotificationService();
+
   /**
    * Create enrollment (self or manual)
    * If enrollmentType is MANUAL (HR/Admin enrollment), auto-approve
@@ -90,6 +93,27 @@ export class TrainingEnrollmentService {
         }
       }
     });
+
+    // Create notification for employee
+    try {
+      if (status === TrainingEnrollmentStatus.APPROVED) {
+        // Manual enrollment - already approved
+        await this.notificationService.createNotification(
+          employeeId,
+          'TRAINING_APPROVAL',
+          `You have been enrolled in the training: ${enrollment.training.title}. Training starts on ${new Date(enrollment.training.startDate).toLocaleDateString()}.`,
+          {
+            enrollmentId: enrollment.id,
+            trainingId: enrollment.training.id,
+            trainingTitle: enrollment.training.title
+          }
+        );
+      }
+      // For PENDING status, notification is created in ESS enrollment service
+    } catch (error) {
+      // Don't fail enrollment if notification creation fails
+      console.error('Failed to create notification:', error);
+    }
 
     return enrollment;
   }
@@ -190,7 +214,7 @@ export class TrainingEnrollmentService {
       throw new AppError('Training is full', 400);
     }
 
-    return prisma.trainingEnrollment.update({
+    const updatedEnrollment = await prisma.trainingEnrollment.update({
       where: { id: enrollmentId },
       data: {
         status: TrainingEnrollmentStatus.APPROVED,
@@ -202,6 +226,25 @@ export class TrainingEnrollmentService {
         employee: true
       }
     });
+
+    // Create notification for employee
+    try {
+      await this.notificationService.createNotification(
+        enrollment.employeeId,
+        'TRAINING_APPROVAL',
+        `Your enrollment request for training: ${updatedEnrollment.training.title} has been approved. Training starts on ${new Date(updatedEnrollment.training.startDate).toLocaleDateString()}.`,
+        {
+          enrollmentId: updatedEnrollment.id,
+          trainingId: updatedEnrollment.training.id,
+          trainingTitle: updatedEnrollment.training.title
+        }
+      );
+    } catch (error) {
+      // Don't fail approval if notification creation fails
+      console.error('Failed to create notification:', error);
+    }
+
+    return updatedEnrollment;
   }
 
   /**
