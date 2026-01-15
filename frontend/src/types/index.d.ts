@@ -31,7 +31,8 @@ export interface User {
 }
 
 export interface ErrorResponse {
-    error: string;
+    error?: string;
+    message?: string;
     errors?: Record<string, string[]>;
 }
 

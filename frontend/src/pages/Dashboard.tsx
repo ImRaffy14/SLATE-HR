@@ -2,7 +2,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, Truck, BookOpen, TrendingUp, AlertTriangle, CheckCircle, Clock, Target, BarChart3 } from "lucide-react"
+import { 
+  Users, 
+  BookOpen, 
+  GraduationCap, 
+  Target, 
+  TrendingUp, 
+  Clock, 
+  AlertTriangle, 
+  CheckCircle, 
+  Calendar,
+  BarChart3,
+  Loader2
+} from "lucide-react"
 import {
   BarChart,
   Bar,
@@ -17,148 +29,143 @@ import {
   Cell,
   Area,
   AreaChart,
+  Legend,
+  Tooltip,
 } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-
-// Mock data for dashboard
-const kpiData = [
-  {
-    title: "Total Employees",
-    value: "247",
-    change: "+12",
-    changeType: "positive",
-    icon: Users,
-    color: "text-blue-600",
-  },
-  {
-    title: "Active Drivers",
-    value: "89",
-    change: "+5",
-    changeType: "positive",
-    icon: Truck,
-    color: "text-green-600",
-  },
-  {
-    title: "Training Completion",
-    value: "87%",
-    change: "+3%",
-    changeType: "positive",
-    icon: BookOpen,
-    color: "text-purple-600",
-  },
-  {
-    title: "Safety Score",
-    value: "94.2",
-    change: "-0.8",
-    changeType: "negative",
-    icon: Target,
-    color: "text-orange-600",
-  },
-]
-
-const departmentData = [
-  { name: "Drivers", employees: 89, budget: 450000 },
-  { name: "Warehouse", employees: 67, budget: 320000 },
-  { name: "Dispatch", employees: 23, budget: 180000 },
-  { name: "Maintenance", employees: 34, budget: 220000 },
-  { name: "Administration", employees: 34, budget: 280000 },
-]
-
-const trainingProgressData = [
-  { month: "Jan", completed: 45, scheduled: 60 },
-  { month: "Feb", completed: 52, scheduled: 65 },
-  { month: "Mar", completed: 48, scheduled: 55 },
-  { month: "Apr", completed: 61, scheduled: 70 },
-  { month: "May", completed: 58, scheduled: 68 },
-  { month: "Jun", completed: 67, scheduled: 75 },
-]
-
-const competencyDistribution = [
-  { name: "Expert", value: 15, color: "#10b981" },
-  { name: "Proficient", value: 35, color: "#3b82f6" },
-  { name: "Developing", value: 40, color: "#f59e0b" },
-  { name: "Beginner", value: 10, color: "#ef4444" },
-]
-
-const performanceMetrics = [
-  { month: "Jan", efficiency: 85, safety: 92, satisfaction: 88 },
-  { month: "Feb", efficiency: 87, safety: 94, satisfaction: 90 },
-  { month: "Mar", efficiency: 83, safety: 91, satisfaction: 87 },
-  { month: "Apr", efficiency: 89, safety: 95, satisfaction: 92 },
-  { month: "May", efficiency: 91, safety: 93, satisfaction: 89 },
-  { month: "Jun", efficiency: 94, safety: 96, satisfaction: 94 },
-]
-
-const recentActivities = [
-  {
-    id: 1,
-    type: "training",
-    message: "DOT Safety Training completed by 15 drivers",
-    time: "2 hours ago",
-    status: "completed",
-  },
-  {
-    id: 2,
-    type: "alert",
-    message: "CDL renewal required for 3 drivers this month",
-    time: "4 hours ago",
-    status: "pending",
-  },
-  {
-    id: 3,
-    type: "competency",
-    message: "Warehouse safety assessment scheduled",
-    time: "6 hours ago",
-    status: "scheduled",
-  },
-  {
-    id: 4,
-    type: "performance",
-    message: "Monthly performance reviews completed",
-    time: "1 day ago",
-    status: "completed",
-  },
-]
+import { useQuery } from "@tanstack/react-query"
+import { getAdminDashboard, AdminDashboardData } from "@/api/dashboard"
 
 export default function Dashboard() {
-  console.log("[v0] Dashboard rendering")
-  console.log("[v0] Competency distribution data:", competencyDistribution)
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ["admin-dashboard"],
+    queryFn: getAdminDashboard,
+    refetchInterval: 60000, // Refresh every minute
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600">Failed to load dashboard data</p>
+          <p className="text-gray-500 text-sm mt-2">Please try refreshing the page</p>
+        </div>
+      </div>
+    )
+  }
+
+  const kpis = dashboardData?.kpis
+  const charts = dashboardData?.charts
+  const recentActivity = dashboardData?.recentActivity || []
+
+  const kpiData = [
+    {
+      title: "Total Employees",
+      value: kpis?.totalEmployees?.toString() || "0",
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "Published Courses",
+      value: kpis?.publishedCourses?.toString() || "0",
+      icon: BookOpen,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: "Active Trainings",
+      value: kpis?.activeTrainings?.toString() || "0",
+      icon: GraduationCap,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "Competencies",
+      value: kpis?.totalCompetencies?.toString() || "0",
+      icon: Target,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+    {
+      title: "Succession Pool",
+      value: kpis?.successionPool?.toString() || "0",
+      icon: TrendingUp,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+    },
+    {
+      title: "Learning Hours",
+      value: kpis?.totalLearningHours?.toFixed(0) || "0",
+      icon: Clock,
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+    },
+  ]
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'training':
+        return <GraduationCap size={16} className="text-green-600" />
+      case 'learning':
+        return <BookOpen size={16} className="text-purple-600" />
+      case 'competency':
+        return <Target size={16} className="text-orange-600" />
+      case 'succession':
+        return <TrendingUp size={16} className="text-indigo-600" />
+      default:
+        return <Users size={16} className="text-blue-600" />
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Completed</Badge>
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
+      case 'scheduled':
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Scheduled</Badge>
+      default:
+        return null
+    }
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Dashboard Overview Header Section */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
         <p className="text-sm sm:text-base text-gray-600">
-          Comprehensive view of FreightHR operations, performance metrics, and key activities
+          Comprehensive view of HR operations, performance metrics, and key activities
         </p>
       </div>
 
-      {/* KPI Cards - Updated colors for light theme and improved mobile responsiveness */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiData.map((kpi, index) => {
           const Icon = kpi.icon
           return (
             <Card key={index} className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-gray-500 text-xs sm:text-sm font-medium truncate">{kpi.title}</p>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
-                    <div className="flex items-center mt-2">
-                      <span
-                        className={`text-xs sm:text-sm font-medium ${
-                          kpi.changeType === "positive" ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {kpi.change}
-                      </span>
-                      <span className="text-gray-500 text-xs sm:text-sm ml-1">vs last month</span>
-                    </div>
+              <CardContent className="p-4">
+                <div className="flex flex-col items-center text-center">
+                  <div className={`p-3 rounded-full ${kpi.bgColor} ${kpi.color} mb-3`}>
+                    <Icon size={24} />
                   </div>
-                  <div className={`p-2 sm:p-3 rounded-full bg-gray-50 ${kpi.color} flex-shrink-0`}>
-                    <Icon size={20} className="sm:w-6 sm:h-6" />
-                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
+                  <p className="text-xs text-gray-500 mt-1">{kpi.title}</p>
                 </div>
               </CardContent>
             </Card>
@@ -166,61 +173,75 @@ export default function Dashboard() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-        {/* Department Overview - Updated chart colors and improved responsiveness */}
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Employee by Department */}
         <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
               <BarChart3 size={20} />
-              Department Overview
+              Employees by Department
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ChartContainer
-              config={{
-                employees: { label: "Employees", color: "#3b82f6" },
-                budget: { label: "Budget ($)", color: "#10b981" },
-              }}
-              className="h-[250px] sm:h-[300px]"
-            >
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={departmentData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart 
+                  data={charts?.employeesByDepartment || []} 
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="employees" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <XAxis type="number" stroke="#6b7280" fontSize={12} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    stroke="#6b7280" 
+                    fontSize={12} 
+                    width={90}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar dataKey="employees" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Training Progress - Updated chart colors and improved responsiveness */}
+        {/* Training Progress */}
         <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
-              <BookOpen size={20} />
-              Training Progress
+              <GraduationCap size={20} />
+              Training Progress (Last 6 Months)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ChartContainer
-              config={{
-                completed: { label: "Completed", color: "#10b981" },
-                scheduled: { label: "Scheduled", color: "#f59e0b" },
-              }}
-              className="h-[250px] sm:h-[300px]"
-            >
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trainingProgressData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={charts?.trainingProgress || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
                   <Line
                     type="monotone"
                     dataKey="completed"
+                    name="Completed"
                     stroke="#10b981"
                     strokeWidth={3}
                     dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
@@ -228,19 +249,21 @@ export default function Dashboard() {
                   <Line
                     type="monotone"
                     dataKey="scheduled"
+                    name="Scheduled"
                     stroke="#f59e0b"
                     strokeWidth={3}
                     dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Competency Distribution - Updated colors and improved mobile layout */}
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Competency Distribution */}
         <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
@@ -249,85 +272,187 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="h-[200px] sm:h-[250px]">
+            <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={competencyDistribution}
+                    data={charts?.competencyDistribution || []}
                     cx="50%"
                     cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
-                    paddingAngle={5}
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={3}
                     dataKey="value"
                     label={({ name, value }) => `${name}: ${value}%`}
                     labelLine={false}
-                    fontSize={12}
                   >
-                    {competencyDistribution.map((entry, index) => (
+                    {(charts?.competencyDistribution || []).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => `${value}%`}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3 mt-2">
+              {(charts?.competencyDistribution || []).map((item, index) => (
+                <div key={index} className="flex items-center gap-1.5">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-xs text-gray-600">{item.name}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Performance Metrics - Updated colors and improved responsiveness */}
+        {/* Learning Trends */}
         <Card className="bg-white border-gray-200 lg:col-span-2 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
-              <TrendingUp size={20} />
-              Performance Metrics
+              <BookOpen size={20} />
+              Learning Trends (Last 6 Months)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ChartContainer
-              config={{
-                efficiency: { label: "Efficiency", color: "#3b82f6" },
-                safety: { label: "Safety", color: "#10b981" },
-                satisfaction: { label: "Satisfaction", color: "#f59e0b" },
-              }}
-              className="h-[200px] sm:h-[250px]"
-            >
+            <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={performanceMetrics} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <AreaChart data={charts?.learningTrends || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#6b7280" fontSize={12} tick={{ fontSize: 12 }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
                   <Area
                     type="monotone"
-                    dataKey="efficiency"
-                    stackId="1"
+                    dataKey="enrollments"
+                    name="Enrollments"
                     stroke="#3b82f6"
                     fill="#3b82f6"
                     fillOpacity={0.3}
                   />
                   <Area
                     type="monotone"
-                    dataKey="safety"
-                    stackId="2"
+                    dataKey="completions"
+                    name="Completions"
                     stroke="#10b981"
                     fill="#10b981"
                     fillOpacity={0.3}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="satisfaction"
-                    stackId="3"
-                    stroke="#f59e0b"
-                    fill="#f59e0b"
-                    fillOpacity={0.3}
-                  />
                 </AreaChart>
               </ResponsiveContainer>
-            </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Charts Row 3 - Succession & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Succession Readiness */}
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
+              <TrendingUp size={20} />
+              Succession Readiness
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={charts?.successionReadiness || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    dataKey="count"
+                    nameKey="status"
+                  >
+                    {(charts?.successionReadiness || []).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-2 mt-2">
+              {(charts?.successionReadiness || []).map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm text-gray-600">{item.status}</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="bg-white border-gray-200 lg:col-span-2 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-gray-900 flex items-center gap-2 text-lg">
+              <Calendar size={20} />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-4 max-h-[350px] overflow-y-auto">
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No recent activity</p>
+                </div>
+              ) : (
+                recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="mt-0.5">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 line-clamp-2">{activity.message}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">{activity.time}</span>
+                        {getStatusBadge(activity.status)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

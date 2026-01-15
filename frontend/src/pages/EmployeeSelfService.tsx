@@ -62,13 +62,15 @@ import type {
   Notification,
 } from "@/types/ess"
 
+type ActiveSection = "dashboard" | "career-path" | "learning" | "trainings" | "achievements" | "notifications" | "performance"
+
 export default function EmployeeSelfService() {
   const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   
   // Determine active section from URL path
-  const getActiveSection = () => {
+  const getActiveSection = (): ActiveSection => {
     const path = location.pathname
     if (path === "/ess" || path === "/ess/") return "dashboard"
     if (path.includes("/career-path")) return "career-path"
@@ -76,10 +78,11 @@ export default function EmployeeSelfService() {
     if (path.includes("/trainings")) return "trainings"
     if (path.includes("/achievements")) return "achievements"
     if (path.includes("/notifications")) return "notifications"
+    if (path.includes("/performance")) return "performance"
     return "dashboard"
   }
   
-  const activeSection = getActiveSection()
+  const activeSection: ActiveSection = getActiveSection()
   const [selectedTargetRole, setSelectedTargetRole] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isCareerPathDetailsOpen, setIsCareerPathDetailsOpen] = useState(false)

@@ -151,3 +151,65 @@ export const getUnreadNotificationCount = async () => {
   }
 };
 
+// ============================================
+// PERFORMANCE FUNCTIONS
+// ============================================
+
+export interface ESSPerformanceSummaryResponse {
+  currentRating?: number;
+  lastReviewDate?: string;
+  nextReviewDate?: string;
+  summary?: {
+    performanceTrend?: string;
+    competencyGrowth?: string;
+    learningActivity?: string;
+    trainingAttendance?: string;
+  };
+  history?: {
+    period: string;
+    overallScore: number;
+    performanceScore: number;
+    competencyScore: number;
+    learningScore: number;
+    trainingScore: number;
+  }[];
+  aiInsight?: {
+    strengthAreas?: string[];
+    developmentAreas?: string[];
+    recommendations?: string[];
+  };
+  recommendations?: {
+    id: string;
+    title: string;
+    type: string;
+    priority: string;
+    rationale: string;
+    linkedCourseId?: string;
+    linkedTrainingId?: string;
+  }[];
+  disclaimer?: string;
+  goals?: {
+    id: string;
+    title: string;
+    status: string;
+    progress: number;
+  }[];
+  feedback?: {
+    id: string;
+    type: string;
+    message: string;
+    date: string;
+  }[];
+}
+
+export const getPerformanceSummary = async (): Promise<ESSPerformanceSummaryResponse | undefined> => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/ess/performance-summary`);
+    return result.data.performanceSummary;
+  } catch (error) {
+    // Return empty object if endpoint doesn't exist yet
+    console.warn("Performance summary endpoint not available");
+    return {};
+  }
+};
+

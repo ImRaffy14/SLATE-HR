@@ -1261,13 +1261,13 @@ export default function LearningManagement() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Total Hours</span>
-                      <span className="font-bold">{learningHoursReport.totalHours.toFixed(1)}</span>
+                      <span className="font-bold">{(learningHoursReport.totalHours as number).toFixed(1)}</span>
                     </div>
                     <div className="text-sm text-gray-600">By Department:</div>
                     {Object.entries(learningHoursReport.departmentHours).slice(0, 3).map(([dept, hours]) => (
                       <div key={dept} className="flex justify-between text-xs">
                         <span>{dept}</span>
-                        <span>{hours.toFixed(1)}h</span>
+                        <span>{(hours as number).toFixed(1)}h</span>
                       </div>
                     ))}
                   </div>
