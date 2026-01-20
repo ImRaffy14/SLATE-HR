@@ -51,6 +51,14 @@ import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import * as successionApi from "@/api/succession"
+import {
+  SuccessionDashboardSummary,
+  NineBoxResponse,
+  ReadinessReport,
+  RiskAnalysis,
+  PromotionPipeline,
+  CriticalRole,
+} from "@/api/succession"
 import { getJobRoles } from "@/api/jobRole"
 import { getEmployees } from "@/api/employee"
 import { getCourses } from "@/api/learning"
@@ -232,12 +240,12 @@ export default function SuccessionPlanning() {
   // API QUERIES
   // ===========================================
 
-  const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
+  const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery<SuccessionDashboardSummary>({
     queryKey: ["succession-dashboard"],
     queryFn: () => successionApi.getDashboardSummary(),
   })
 
-  const { data: criticalRolesData, isLoading: isLoadingRoles } = useQuery({
+  const { data: criticalRolesData, isLoading: isLoadingRoles } = useQuery<{ roles: CriticalRole[] }>({
     queryKey: ["critical-roles"],
     queryFn: () => successionApi.getCriticalRoles(),
   })
@@ -257,22 +265,22 @@ export default function SuccessionPlanning() {
     queryFn: () => successionApi.getCompetenciesForMapping(),
   })
 
-  const { data: nineBoxData, isLoading: isLoading9Box } = useQuery({
+  const { data: nineBoxData, isLoading: isLoading9Box } = useQuery<NineBoxResponse>({
     queryKey: ["9box-data"],
     queryFn: () => successionApi.get9BoxData(),
   })
 
-  const { data: readinessData, isLoading: isLoadingReadiness } = useQuery({
+  const { data: readinessData, isLoading: isLoadingReadiness } = useQuery<ReadinessReport>({
     queryKey: ["readiness-report"],
     queryFn: () => successionApi.getReadinessReport(),
   })
 
-  const { data: riskData, isLoading: isLoadingRisk } = useQuery({
+  const { data: riskData, isLoading: isLoadingRisk } = useQuery<RiskAnalysis>({
     queryKey: ["risk-analysis"],
     queryFn: () => successionApi.getRiskAnalysis(),
   })
 
-  const { data: promotionData, isLoading: isLoadingPromotion } = useQuery({
+  const { data: promotionData, isLoading: isLoadingPromotion } = useQuery<PromotionPipeline>({
     queryKey: ["promotion-pipeline"],
     queryFn: () => successionApi.getPromotionPipeline(),
   })
@@ -1595,11 +1603,21 @@ export default function SuccessionPlanning() {
                     <SelectValue placeholder="Select target role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {criticalRolesData.roles.map((role: any) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.jobRole?.name}
-                      </SelectItem>
-                    ))}
+                    {criticalRolesData.roles
+                      .filter((role: any) => {
+                        if (!selectedEmployeeForIDP) return true
+                        // Hide roles where this employee already has an ACTIVE or DRAFT IDP
+                        return !role.idps?.some(
+                          (idp: any) =>
+                            idp.employeeId === selectedEmployeeForIDP.id &&
+                            (idp.status === "ACTIVE" || idp.status === "DRAFT")
+                        )
+                      })
+                      .map((role: any) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.jobRole?.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               ) : (
@@ -1814,14 +1832,19 @@ export default function SuccessionPlanning() {
             <div className="space-y-2">
               <Label>Linked Course (Optional)</Label>
               <Select
-                value={goalFormData.courseId}
-                onValueChange={(value) => setGoalFormData((prev) => ({ ...prev, courseId: value }))}
+                value={goalFormData.courseId || "none"}
+                onValueChange={(value) =>
+                  setGoalFormData((prev) => ({
+                    ...prev,
+                    courseId: value === "none" ? "" : value,
+                  }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a course" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {courses.map((course: any) => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.title}
@@ -1833,14 +1856,19 @@ export default function SuccessionPlanning() {
             <div className="space-y-2">
               <Label>Linked Training (Optional)</Label>
               <Select
-                value={goalFormData.trainingId}
-                onValueChange={(value) => setGoalFormData((prev) => ({ ...prev, trainingId: value }))}
+                value={goalFormData.trainingId || "none"}
+                onValueChange={(value) =>
+                  setGoalFormData((prev) => ({
+                    ...prev,
+                    trainingId: value === "none" ? "" : value,
+                  }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a training" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {trainings.map((training: any) => (
                     <SelectItem key={training.id} value={training.id}>
                       {training.title}

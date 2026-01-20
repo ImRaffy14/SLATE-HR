@@ -64,7 +64,7 @@ export default function AdminLoginPage() {
                 <div className="rounded-full bg-gray-800 p-1">
                     <img src={LOGO} alt="Logo" className="h-15 w-15 rounded-full" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-100">Login Admin</h1>
+                <h1 className="text-2xl font-bold text-gray-100">Login Access</h1>
                 <div className="flex items-center">
                     <span className="inline-block h-2 w-2 rounded-full bg-red-500 mr-2"></span>
                     <p className="text-sm font-medium text-gray-400">Restricted Access</p>
@@ -83,7 +83,7 @@ export default function AdminLoginPage() {
                 {/* Email */}
                 <div className="space-y-2">
                     <label htmlFor="username" className="text-sm font-medium text-gray-300">
-                    Admin Email
+                    Email
                     </label>
                     <input
                     id="username"
@@ -99,7 +99,7 @@ export default function AdminLoginPage() {
                 {/* Password */}
                 <div className="space-y-2">
                     <label htmlFor="password" className="text-sm font-medium text-gray-300">
-                    Admin Password
+                    Password
                     </label>
                     <div className="relative">
                     <input

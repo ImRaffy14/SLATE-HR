@@ -4,9 +4,9 @@ import axiosInstance from "@/lib/axios";
 
 const handleError = (error: unknown): never => {
   const axiosError = error as AxiosError<ErrorResponse>;
-  if (axiosError.response) throw new Error(axiosError.response.data.error || axiosError.response.data.message);
-  else if (axiosError.request) throw new Error("Network error - no response from server");
-  else throw new Error("Request failed to be created");
+  if (axiosError.response) throw new Error(axiosError.response.data.error);
+  if (axiosError.request) throw new Error("Network error - no response from server");
+  throw new Error("Request failed to be created");
 };
 
 // ============================================

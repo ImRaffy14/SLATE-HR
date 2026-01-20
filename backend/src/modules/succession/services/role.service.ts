@@ -115,6 +115,16 @@ export class RoleService {
               }
             }
           },
+          idps: {
+            include: {
+              employee: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
           creator: {
             select: {
               id: true,

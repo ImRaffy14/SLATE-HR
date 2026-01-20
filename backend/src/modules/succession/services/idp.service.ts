@@ -357,7 +357,7 @@ export class IDPService {
     title: string;
     description?: string;
     goalType: IDPGoalType;
-    targetDate?: Date;
+    targetDate?: Date | string;
     courseId?: string;
     trainingId?: string;
     competencyId?: string;
@@ -400,11 +400,20 @@ export class IDPService {
       }
     }
 
+    // Normalize targetDate to a proper Date instance if provided as string
+    const { targetDate, ...rest } = data;
+    const goalData: any = {
+      idpId,
+      ...rest,
+    };
+
+    if (targetDate) {
+      goalData.targetDate =
+        targetDate instanceof Date ? targetDate : new Date(targetDate as string);
+    }
+
     const goal = await prisma.iDPGoal.create({
-      data: {
-        idpId,
-        ...data,
-      },
+      data: goalData,
       include: {
         course: {
           select: {
