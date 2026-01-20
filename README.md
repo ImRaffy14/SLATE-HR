@@ -48,24 +48,24 @@ SLATE-HR is an integrated Human Resources system that helps organizations manage
 
 ```mermaid
 flowchart TB
-    subgraph Users[Users]
-        Employee[Employee]
-        Manager[Manager]
-        HR[HR Admin]
+    subgraph Users["Users"]
+        Employee["Employee"]
+        Manager["Manager"]
+        HR["HR Admin"]
     end
     
-    subgraph Portal[SLATE-HR Portal]
-        ESS[Employee Self-Service (ESS)]
-        Admin[Admin Panel]
+    subgraph Portal["SLATE-HR Portal"]
+        ESS["Employee Self-Service (ESS)"]
+        Admin["Admin Panel"]
     end
     
-    subgraph Modules[Core Modules]
-        Learning[Learning Management]
-        Training[Training Management]
-        Competency[Competency Management]
-        Performance[Performance Management]
-        Succession[Succession Planning]
-        Dashboard[Admin Dashboard]
+    subgraph Modules["Core Modules"]
+        Learning["Learning Management"]
+        Training["Training Management"]
+        Competency["Competency Management"]
+        Performance["Performance Management"]
+        Succession["Succession Planning"]
+        Dashboard["Admin Dashboard"]
     end
     
     Employee --> ESS
