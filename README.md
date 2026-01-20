@@ -1,144 +1,313 @@
+# SLATE-HR System User Guide
 
-# MERN-BOILER-PLATE-TS
-
-A modern, production-ready **MERN (MongoDB, Express, React, Node.js)** fullstack boilerplate built with **TypeScript**. This repository is designed to help developers quickly bootstrap scalable applications with a clean architecture, modular structure, and essential features already integrated.
-
----
-
-## 🧰 Tech Stack
-
-### 🔹 Frontend
-- **React.js** (Vite)
-- **TypeScript**
-- **Tailwind CSS**
-- **Axios**
-- **React Router DOM**
-
-### 🔹 Backend
-- **Node.js**
-- **Express.js**
-- **TypeScript**
-- **Prisma ORM**
-- **MongoDB**
-- **Multer** (for file uploads)
-- **Cloudinary** (for image storage)
-- **JWT** (with HTTP-only cookies)
+## Complete Documentation for Students and End Users
 
 ---
 
-## 📁 Project Structure
+## Table of Contents
 
+1. [Introduction](#1-introduction)
+2. [System Overview](#2-system-overview)
+3. [End-to-End Process](#3-end-to-end-process)
+4. [Module 1: Employee Self-Service (ESS)](#4-module-1-employee-self-service-ess)
+5. [Module 2: Learning Management](#5-module-2-learning-management)
+6. [Module 3: Training Management](#6-module-3-training-management)
+7. [Module 4: Competency Management](#7-module-4-competency-management)
+8. [Module 5: Performance Management](#8-module-5-performance-management)
+9. [Module 6: Succession Planning](#9-module-6-succession-planning)
+10. [Module 7: Admin Dashboard](#10-module-7-admin-dashboard)
+11. [Quick Reference Guide](#11-quick-reference-guide)
+12. [Appendix: System Flow Diagrams](#12-appendix-system-flow-diagrams)
+
+---
+
+## 1. Introduction
+
+### What is SLATE-HR?
+
+SLATE-HR is an integrated Human Resources system designed to manage employees, learning, training, competencies, performance, and succession planning in one unified platform.
+
+### Who Uses This System?
+
+* **Employees** – Learn, attend trainings, upload achievements, and track career growth.
+* **Managers** – Review performance, give feedback, and develop team members.
+* **HR Administrators** – Configure the system, manage learning, competencies, and plan future leadership.
+
+### Why This System Exists
+
+* Reduce paperwork and manual HR processes
+* Connect learning, training, and performance data
+* Identify and develop future leaders
+* Support data-driven HR decisions
+
+---
+
+## 2. System Overview
+
+### System Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph Users
+        Employee
+        Manager
+        HR_Admin[HR Admin]
+    end
+
+    subgraph Portal[SLATE-HR Portal]
+        ESS[Employee Self-Service]
+        AdminPanel[Admin Panel]
+    end
+
+    subgraph Modules
+        Learning
+        Training
+        Competency
+        Performance
+        Succession
+        Dashboard
+    end
+
+    Employee --> ESS
+    Manager --> ESS
+    Manager --> AdminPanel
+    HR_Admin --> AdminPanel
+
+    ESS --> Learning
+    ESS --> Training
+    ESS --> Performance
+
+    AdminPanel --> Learning
+    AdminPanel --> Training
+    AdminPanel --> Competency
+    AdminPanel --> Performance
+    AdminPanel --> Succession
+    AdminPanel --> Dashboard
+
+    Learning --> Competency
+    Training --> Competency
+    Competency --> Performance
+    Performance --> Succession
 ```
-MERN-BOILER-PLATE-TS/
-├── backend/                  # Backend API
-│   ├── config/               # DB & Prisma setup
-│   ├── controllers/          # Express route controllers (class-based)
-│   ├── routes/               # Express route definitions
-│   ├── services/             # Business logic layer
-│   ├── middlewares/          # Auth, error handler, multer config, etc.
-│   ├── utils/                # Reusable helper functions
-│   └── index.ts              # Server entry point
-│
-├── frontend/                 # Frontend React App
-│   ├── src/
-│   │   ├── components/       # Reusable UI components
-│   │   ├── pages/            # Views
-│   │   ├── services/         # Axios API services
-│   │   ├── types/            # Custom type declarations
-│   │   └── main.tsx         # App entry
-│
-├── docker-compose.yml        # Docker setup (optional)
-└── README.md
+
+### Key Features at a Glance
+
+| Feature                | Description                       | Users               |
+| ---------------------- | --------------------------------- | ------------------- |
+| Employee Self-Service  | Personal employee portal          | Employees           |
+| Learning Management    | Online courses & e-learning       | Employees, HR       |
+| Training Management    | Live trainings with QR attendance | Employees, HR       |
+| Competency Management  | Skill and capability tracking     | HR, Managers        |
+| Performance Management | Reviews and feedback              | Managers, Employees |
+| Succession Planning    | Leadership pipeline planning      | HR, Leadership      |
+| Admin Dashboard        | Analytics & system overview       | HR, Management      |
+
+---
+
+## 3. End-to-End Process
+
+### Complete Employee Journey
+
+```mermaid
+flowchart TD
+    A[Employee Joins Company] --> B[HR Creates Employee Record]
+    B --> C[Employee Gets ESS Access]
+    C --> D[Employee Logs In]
+
+    D --> E[Dashboard]
+    E --> F{Employee Action}
+
+    F -->|Learn| G[Enroll in Course]
+    F -->|Train| H[Enroll in Training]
+    F -->|Grow| I[View Career Path]
+
+    G --> J[Complete Course]
+    J --> K[Certificate Issued]
+
+    H --> L[Attend Training]
+    L --> M[Scan QR Code]
+
+    K --> N[Competency Updated]
+    M --> N
+
+    N --> O[Performance Review]
+    O --> P{Talent Pool?}
+
+    P -->|Yes| Q[Create IDP]
+    P -->|No| G
+
+    Q --> R[Track Progress]
+    R --> S{Ready?}
+    S -->|Yes| T[Promotion Considered]
+    S -->|No| G
 ```
 
 ---
 
-## 🚀 Getting Started
+## 4. Module 1: Employee Self-Service (ESS)
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/ImRaffy14/MERN-BOILER-PLATE-TS.git
-cd MERN-BOILER-PLATE-TS
+### ESS Structure
+
+```mermaid
+flowchart LR
+    ESS --> Dashboard
+    ESS --> CareerPath[Career Path]
+    ESS --> LearningTab[Learning]
+    ESS --> TrainingTab[Trainings]
+    ESS --> Achievements
+    ESS --> Notifications
 ```
 
-### 2. Install dependencies
+### Key Capabilities
 
-#### Backend
-```bash
-cd backend
-yarn install
-```
+* View dashboard summary and calendar
+* Enroll in courses and trainings
+* Scan QR codes for attendance
+* Upload achievements
+* Track career growth and performance
 
-#### Frontend
-```bash
-cd frontend
-yarn install
-```
+---
 
-### 3. Environment Variables
+## 5. Module 2: Learning Management
 
-#### Backend `.env`
-```env
-DATABASE_URL=mongodb+srv://<user>:<pass>@cluster.mongodb.net/yourDB
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-JWT_SECRET=your_jwt_secret
-PORT=5001
-```
+### Learning Flow
 
-#### Frontend `.env`
-```env
-VITE_API_URL=http://localhost:5000
-```
+```mermaid
+flowchart TD
+    HR[HR Creates Course] --> Materials
+    Materials --> Quiz
+    Quiz --> Publish
 
-### 4. Run Development Servers
+    Publish --> Enroll
+    Enroll --> Study
+    Study --> TakeQuiz
+    TakeQuiz --> Pass{Passed?}
 
-#### Backend
-```bash
-cd backend
-yarn dev
-```
+    Pass -->|Yes| Complete
+    Pass -->|No| TakeQuiz
 
-#### Frontend
-```bash
-cd frontend
-yarn dev
+    Complete --> Certificate
+    Certificate --> CompetencyUpdate[Competency Updated]
 ```
 
 ---
 
-## Features
+## 6. Module 3: Training Management
 
-- Full-stack MERN boilerplate with TypeScript support
-- User management system including registration, login, profile management, password change, and user editing
-- RESTful API with Express and Prisma ORM
-- Authentication with JWT and secure cookie handling
-- File upload support (e.g., user avatars) using Multer and cloud storage integration
-- Middleware for request validation and error handling
-- React frontend with TypeScript, React Router, and Axios for API communication
-- Modular architecture for easy scalability and maintainability
+### Training Flow
 
+```mermaid
+flowchart TD
+    HR --> CreateTraining
+    CreateTraining --> Schedule
+    Schedule --> Publish
 
----
-
-## 📦 Deployment
-
-You can deploy using services like:
-
-- **Frontend:** Vercel, Netlify
-- **Backend:** Railway, Render, Fly.io
-- **Database:** MongoDB Atlas
+    Publish --> Enroll
+    Enroll --> TrainingDay
+    TrainingDay --> QRCode
+    QRCode --> Scan
+    Scan --> AttendanceMarked
+```
 
 ---
 
-## 👨‍💻 Author
+## 7. Module 4: Competency Management
 
-**ImRaffy14**  
-🔗 [GitHub Profile](https://github.com/ImRaffy14)
+### Competency Lifecycle
+
+```mermaid
+flowchart TD
+    Define[Define Competencies] --> LinkRoles
+    LinkRoles --> Assess
+    Assess --> Scores
+    Scores --> GapAnalysis
+    GapAnalysis --> RecommendLearning
+```
 
 ---
 
-## 📄 License
+## 8. Module 5: Performance Management
 
-This project is licensed under the [MIT License](./LICENSE).
+### Performance Review Flow
+
+```mermaid
+flowchart TD
+    Work --> DataCollection
+    DataCollection --> ManagerReview
+    ManagerReview --> Rating
+    Rating --> Feedback
+    Feedback --> EmployeeView
+```
+
+---
+
+## 9. Module 6: Succession Planning
+
+### Succession Planning Flow
+
+```mermaid
+flowchart TD
+    CriticalRoles --> TalentPool
+    TalentPool --> Evaluate
+    Evaluate --> Readiness
+    Readiness --> IDP
+    IDP --> Learning
+    Learning --> ReadyNow[Ready for Promotion]
+```
+
+---
+
+## 10. Module 7: Admin Dashboard
+
+### Dashboard Overview
+
+```mermaid
+flowchart TD
+    Dashboard --> KPIs
+    Dashboard --> Charts
+    Dashboard --> ActivityLog
+```
+
+---
+
+## 11. Quick Reference Guide
+
+### Employees
+
+| Task               | Location           |
+| ------------------ | ------------------ |
+| Enroll in course   | ESS → Learning     |
+| Attend training    | ESS → Trainings    |
+| Upload achievement | ESS → Achievements |
+| View career path   | ESS → Career Path  |
+
+### HR / Admin
+
+| Task                | Location           |
+| ------------------- | ------------------ |
+| Create course       | Admin → Learning   |
+| Create training     | Admin → Training   |
+| Define competencies | Admin → Competency |
+| Manage succession   | Admin → Succession |
+
+---
+
+## 12. Appendix: Automation Flow
+
+### IDP Progress Automation
+
+```mermaid
+flowchart TD
+    IDP --> Goals
+    Goals --> Learning
+    Learning --> AutoUpdate
+    AutoUpdate --> ReadyCheck{Ready?}
+    ReadyCheck -->|Yes| Promotion
+    ReadyCheck -->|No| Learning
+```
+
+---
+
+**Document Version:** 1.0
+**Audience:** Students and End Users
+**Format:** Markdown (.md)
