@@ -9,17 +9,40 @@ import {
   getDeviceCookieName,
 } from '../utils/authSecurity';
 import { AppError } from '../utils/appError';
+import { CookieOptions } from 'express';
 
 const DEVICE_COOKIE_NAME = getDeviceCookieName();
 
 const getCookieMaxAge = () => 7 * 24 * 60 * 60 * 1000;
 
-const getCookieSettings = () => ({
+const getCookieSameSite = (): CookieOptions['sameSite'] => {
+  const configured = process.env.COOKIE_SAMESITE?.toLowerCase();
+  if (configured === 'none') return 'none';
+  if (configured === 'strict') return 'strict';
+  if (configured === 'lax') return 'lax';
+  return process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+};
+
+const getCookieSecure = (): boolean => {
+  const configured = process.env.COOKIE_SECURE?.toLowerCase();
+  if (configured === 'true') return true;
+  if (configured === 'false') return false;
+  return process.env.NODE_ENV === 'production';
+};
+
+const getDeviceCookieSettings = (): CookieOptions => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  secure: getCookieSecure(),
+  sameSite: getCookieSameSite(),
   maxAge: getCookieMaxAge(),
   signed: true,
+});
+
+const getAccessTokenCookieSettings = (): CookieOptions => ({
+  httpOnly: false,
+  secure: getCookieSecure(),
+  sameSite: getCookieSameSite(),
+  maxAge: 24 * 60 * 60 * 1000,
 });
 
 const ensureDeviceId = (req: Request, res: Response): string => {
@@ -28,7 +51,7 @@ const ensureDeviceId = (req: Request, res: Response): string => {
 
   if (!deviceId) {
     deviceId = generateDeviceId();
-    res.cookie(DEVICE_COOKIE_NAME, deviceId, getCookieSettings());
+    res.cookie(DEVICE_COOKIE_NAME, deviceId, getDeviceCookieSettings());
   }
 
   return deviceId;
@@ -67,12 +90,7 @@ export class AuthController {
     }
 
     res
-      .cookie('accessToken', loginResult.token, {
-        httpOnly: false,
-        secure: false,
-        sameSite: 'none',
-        maxAge: 24 * 60 * 60 * 1000,
-      })
+      .cookie('accessToken', loginResult.token, getAccessTokenCookieSettings())
       .status(200)
       .json({
         status: 'success',
@@ -98,12 +116,7 @@ export class AuthController {
     );
 
     res
-      .cookie('accessToken', result.token, {
-        httpOnly: false,
-        secure: false,
-        sameSite: 'none',
-        maxAge: 24 * 60 * 60 * 1000,
-      })
+      .cookie('accessToken', result.token, getAccessTokenCookieSettings())
       .status(200)
       .json({
         status: 'success',
@@ -152,8 +165,8 @@ export class AuthController {
     res
       .clearCookie('accessToken', {
         httpOnly: false,
-        secure: false,
-        sameSite: 'none', // now allowed since same domain
+        secure: getCookieSecure(),
+        sameSite: getCookieSameSite(),
       })
       .status(200)
       .json({

@@ -11,19 +11,43 @@ const authSecurity_1 = require("../utils/authSecurity");
 const appError_1 = require("../utils/appError");
 const DEVICE_COOKIE_NAME = (0, authSecurity_1.getDeviceCookieName)();
 const getCookieMaxAge = () => 7 * 24 * 60 * 60 * 1000;
-const getCookieSettings = () => ({
+const getCookieSameSite = () => {
+    const configured = process.env.COOKIE_SAMESITE?.toLowerCase();
+    if (configured === 'none')
+        return 'none';
+    if (configured === 'strict')
+        return 'strict';
+    if (configured === 'lax')
+        return 'lax';
+    return process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+};
+const getCookieSecure = () => {
+    const configured = process.env.COOKIE_SECURE?.toLowerCase();
+    if (configured === 'true')
+        return true;
+    if (configured === 'false')
+        return false;
+    return process.env.NODE_ENV === 'production';
+};
+const getDeviceCookieSettings = () => ({
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: getCookieSecure(),
+    sameSite: getCookieSameSite(),
     maxAge: getCookieMaxAge(),
     signed: true,
+});
+const getAccessTokenCookieSettings = () => ({
+    httpOnly: false,
+    secure: getCookieSecure(),
+    sameSite: getCookieSameSite(),
+    maxAge: 24 * 60 * 60 * 1000,
 });
 const ensureDeviceId = (req, res) => {
     const signedCookies = (req.signedCookies || {});
     let deviceId = signedCookies[DEVICE_COOKIE_NAME];
     if (!deviceId) {
         deviceId = (0, authSecurity_1.generateDeviceId)();
-        res.cookie(DEVICE_COOKIE_NAME, deviceId, getCookieSettings());
+        res.cookie(DEVICE_COOKIE_NAME, deviceId, getDeviceCookieSettings());
     }
     return deviceId;
 };
@@ -57,12 +81,7 @@ class AuthController {
                 return;
             }
             res
-                .cookie('accessToken', loginResult.token, {
-                httpOnly: false,
-                secure: false,
-                sameSite: 'none',
-                maxAge: 24 * 60 * 60 * 1000,
-            })
+                .cookie('accessToken', loginResult.token, getAccessTokenCookieSettings())
                 .status(200)
                 .json({
                 status: 'success',
@@ -82,12 +101,7 @@ class AuthController {
                 ipAddress: (0, authSecurity_1.extractIpAddress)(req),
             });
             res
-                .cookie('accessToken', result.token, {
-                httpOnly: false,
-                secure: false,
-                sameSite: 'none',
-                maxAge: 24 * 60 * 60 * 1000,
-            })
+                .cookie('accessToken', result.token, getAccessTokenCookieSettings())
                 .status(200)
                 .json({
                 status: 'success',
@@ -128,8 +142,8 @@ class AuthController {
             res
                 .clearCookie('accessToken', {
                 httpOnly: false,
-                secure: false,
-                sameSite: 'none', // now allowed since same domain
+                secure: getCookieSecure(),
+                sameSite: getCookieSameSite(),
             })
                 .status(200)
                 .json({
