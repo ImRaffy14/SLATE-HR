@@ -17,7 +17,7 @@ app.use((0, cors_1.default)({
     credentials: true,
 }));
 app.use(express_1.default.json());
-app.use((0, cookie_parser_1.default)());
+app.use((0, cookie_parser_1.default)(process.env.COOKIE_SECRET || process.env.JWT_SECRET));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(logger_1.default);
 app.use('/api/v1', index_1.default);

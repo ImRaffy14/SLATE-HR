@@ -2,6 +2,37 @@ import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import prisma from '../config/prisma';
+import {
+  extractIpAddress,
+  extractUserAgent,
+  generateDeviceId,
+  getDeviceCookieName,
+} from '../utils/authSecurity';
+import { AppError } from '../utils/appError';
+
+const DEVICE_COOKIE_NAME = getDeviceCookieName();
+
+const getCookieMaxAge = () => 7 * 24 * 60 * 60 * 1000;
+
+const getCookieSettings = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: getCookieMaxAge(),
+  signed: true,
+});
+
+const ensureDeviceId = (req: Request, res: Response): string => {
+  const signedCookies = (req.signedCookies || {}) as Record<string, string | undefined>;
+  let deviceId = signedCookies[DEVICE_COOKIE_NAME];
+
+  if (!deviceId) {
+    deviceId = generateDeviceId();
+    res.cookie(DEVICE_COOKIE_NAME, deviceId, getCookieSettings());
+  }
+
+  return deviceId;
+};
 
 export class AuthController {
   private authService = new AuthService();
@@ -16,20 +47,94 @@ export class AuthController {
   });
 
   loginUser = asyncHandler(async (req: Request, res: Response) => {
-    const userLoggedIn = await this.authService.loginService(req.body);
+    const deviceId = ensureDeviceId(req, res);
+    const loginResult = await this.authService.loginWithDeviceCheck(req.body, {
+      deviceId,
+      userAgent: extractUserAgent(req),
+      ipAddress: extractIpAddress(req),
+    });
+
+    if (loginResult.requiresOtp) {
+      res.status(200).json({
+        status: 'success',
+        message: 'OTP verification is required for this device.',
+        requiresOtp: true,
+        challengeId: loginResult.challengeId,
+        maskedEmail: loginResult.maskedEmail,
+        expiresInSeconds: loginResult.expiresInSeconds,
+      });
+      return;
+    }
+
     res
-      .cookie('accessToken', userLoggedIn.token, {
+      .cookie('accessToken', loginResult.token, {
         httpOnly: false,
         secure: false,
-        sameSite: 'none', // now allowed since same domain
+        sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json({
         status: 'success',
         message: 'Logged in successfully',
-        token: userLoggedIn.token, // Include token in response body
+        token: loginResult.token,
       });
+  });
+
+  verifyOtp = asyncHandler(async (req: Request, res: Response) => {
+    const { challengeId, otpCode } = req.body || {};
+    if (!challengeId || !otpCode) {
+      throw new AppError('challengeId and otpCode are required.', 400);
+    }
+
+    const deviceId = ensureDeviceId(req, res);
+    const result = await this.authService.verifyOtpService(
+      { challengeId, otpCode },
+      {
+        deviceId,
+        userAgent: extractUserAgent(req),
+        ipAddress: extractIpAddress(req),
+      }
+    );
+
+    res
+      .cookie('accessToken', result.token, {
+        httpOnly: false,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        status: 'success',
+        message: 'OTP verified successfully.',
+        token: result.token,
+      });
+  });
+
+  resendOtp = asyncHandler(async (req: Request, res: Response) => {
+    const { challengeId } = req.body || {};
+    if (!challengeId) {
+      throw new AppError('challengeId is required.', 400);
+    }
+
+    const deviceId = ensureDeviceId(req, res);
+    const result = await this.authService.resendOtpService(
+      { challengeId },
+      {
+        deviceId,
+        userAgent: extractUserAgent(req),
+        ipAddress: extractIpAddress(req),
+      }
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'A new OTP was sent to your email.',
+      challengeId: result.challengeId,
+      maskedEmail: result.maskedEmail,
+      expiresInSeconds: result.expiresInSeconds,
+    });
   });
 
   getUserProfile = asyncHandler(async (req: Request, res: Response) => {

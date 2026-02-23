@@ -44,7 +44,7 @@ function Sidebar() {
     { id: "ess-learning", path: "/ess/learning", icon: <BookPlus size={20} />, label: "Learning" },
     { id: "ess-trainings", path: "/ess/trainings", icon: <GraduationCap size={20} />, label: "Trainings" },
     { id: "ess-achievements", path: "/ess/achievements", icon: <Award size={20} />, label: "Achievements" },
-    { id: "ess-performance", path: "/ess/performance", icon: <FolderKanban size={20} />, label: "Performance" },
+    // { id: "ess-performance", path: "/ess/performance", icon: <FolderKanban size={20} />, label: "Performance" },
   ]
 
   const menuItems = [
