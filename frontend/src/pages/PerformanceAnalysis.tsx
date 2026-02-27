@@ -44,9 +44,11 @@ import {
   syncPerformanceSnapshots,
   getEmployeeMetrics,
   getExplainableAI,
+  getOrgAnalytics,
   EmployeeWithMetrics,
   AIAnalysisResult,
   AIRecommendation,
+  OrgAnalytics,
 } from "@/api/performance"
 
 const riskLevels = ["All", "Low", "Medium", "High"]
@@ -84,6 +86,9 @@ export default function PerformanceAnalysis() {
     loading: false,
   })
   const [generateReportModal, setGenerateReportModal] = useState(false)
+  const [reportScope, setReportScope] = useState<"all" | "department" | "team" | "role">("all")
+  const [reportFormat, setReportFormat] = useState<"pdf" | "excel" | "dashboard" | "">("")
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
 
   // Fetch dashboard summary
   const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
@@ -206,6 +211,147 @@ export default function PerformanceAnalysis() {
       loading: true,
     })
     getRecommendationsMutation.mutate({ employeeId: emp.id, forceRefresh })
+  }
+
+  const handleGenerateReport = async () => {
+    if (!reportFormat) {
+      toast.error("Please select a report format (e.g., Excel).")
+      return
+    }
+
+    if (reportFormat !== "excel") {
+      toast.error("Only Excel format is supported at the moment.")
+      return
+    }
+
+    setIsGeneratingReport(true)
+    try {
+      const analytics = (await getOrgAnalytics()) as OrgAnalytics
+
+      if (!analytics) {
+        throw new Error("No analytics data available.")
+      }
+
+      const lines: string[] = []
+      lines.push([
+        "section",
+        "name",
+        "department",
+        "overallScore",
+        "riskLevel",
+        "employeeCount",
+        "avgScore",
+        "totalEmployees",
+        "avgPerformanceScore",
+        "avgCompetencyScore",
+        "avgLearningScore",
+        "avgTrainingScore",
+        "lowRisk",
+        "mediumRisk",
+        "highRisk",
+      ].join(","))
+
+      // Summary row
+      lines.push([
+        "summary",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        String(analytics.totalEmployees ?? ""),
+        String(Math.round(analytics.avgPerformanceScore ?? 0)),
+        String(Math.round(analytics.avgCompetencyScore ?? 0)),
+        String(Math.round(analytics.avgLearningScore ?? 0)),
+        String(Math.round(analytics.avgTrainingScore ?? 0)),
+        String(analytics.riskDistribution?.low ?? 0),
+        String(analytics.riskDistribution?.medium ?? 0),
+        String(analytics.riskDistribution?.high ?? 0),
+      ].join(","))
+
+      // Department breakdown
+      analytics.departmentBreakdown?.forEach((dept) => {
+        lines.push([
+          "department",
+          "",
+          `"${dept.department}"`,
+          "",
+          "",
+          String(dept.employeeCount ?? 0),
+          String(Math.round(dept.avgScore ?? 0)),
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ].join(","))
+      })
+
+      // Top performers
+      analytics.topPerformers?.forEach((emp) => {
+        lines.push([
+          "topPerformer",
+          `"${emp.name}"`,
+          `"${emp.department ?? ""}"`,
+          String(Math.round(emp.overallScore ?? 0)),
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ].join(","))
+      })
+
+      // Needs attention
+      analytics.needsAttention?.forEach((emp) => {
+        lines.push([
+          "needsAttention",
+          `"${emp.name}"`,
+          `"${emp.department ?? ""}"`,
+          String(Math.round(emp.overallScore ?? 0)),
+          emp.riskLevel ?? "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ].join(","))
+      })
+
+      const csvContent = lines.join("\n")
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      const timestamp = new Date().toISOString().split("T")[0]
+      link.href = url
+      link.download = `performance-report-${timestamp}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success("Performance report (Excel/CSV) generated.")
+      setGenerateReportModal(false)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate report.")
+    } finally {
+      setIsGeneratingReport(false)
+    }
   }
 
   return (
@@ -941,7 +1087,7 @@ export default function PerformanceAnalysis() {
           <div className="space-y-6 mt-6">
             <div>
               <Label className="text-gray-900 text-sm sm:text-base font-medium">Report Scope</Label>
-              <Select>
+              <Select value={reportScope} onValueChange={(value) => setReportScope(value as typeof reportScope)}>
                 <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900 mt-2">
                   <SelectValue placeholder="Select scope" />
                 </SelectTrigger>
@@ -956,22 +1102,28 @@ export default function PerformanceAnalysis() {
 
             <div>
               <Label className="text-gray-900 text-sm sm:text-base font-medium">Format</Label>
-              <Select>
+              <Select value={reportFormat} onValueChange={(value) => setReportFormat(value as typeof reportFormat)}>
                 <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900 mt-2">
                   <SelectValue placeholder="Select format" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200 shadow-lg">
-                  <SelectItem value="pdf">PDF Report</SelectItem>
                   <SelectItem value="excel">Excel Spreadsheet</SelectItem>
-                  <SelectItem value="dashboard">Interactive Dashboard</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Generate Report
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                onClick={handleGenerateReport}
+                disabled={isGeneratingReport}
+              >
+                {isGeneratingReport ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                )}
+                {isGeneratingReport ? "Generating..." : "Generate Report"}
               </Button>
               <Button
                 variant="outline"

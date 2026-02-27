@@ -58,7 +58,7 @@ const UserManagement = () => {
   const [editUser, setEditUser] = useState({
     name: "",
     email: "",
-    role: "USER",
+    role: "USER", // kept for display only; no longer editable
   })
 
   const [passwordData, setPasswordData] = useState({
@@ -219,9 +219,8 @@ const UserManagement = () => {
       formData.append("imagePublicId", selectedUser.image.publicId)
     }
 
-    Object.entries(editUser).forEach(([key, value]) => {
-      formData.append(key, value)
-    })
+    formData.append("name", editUser.name)
+    formData.append("email", editUser.email)
 
     mutate(
       { formData, id: selectedUser.id },
@@ -1210,28 +1209,17 @@ const UserManagement = () => {
                 />
               </div>
 
-              {/* Role */}
+              {/* Role (read-only) */}
               <div className="space-y-2">
-                <Label htmlFor="edit-role" className="text-gray-700 font-medium">
-                  Role <span className="text-red-500">*</span>
-                </Label>
-                <Select
+                <Label className="text-gray-700 font-medium">Role</Label>
+                <Input
                   value={editUser.role}
-                  onValueChange={(value) => setEditUser({ ...editUser, role: value })}
-                  required
-                >
-                  <SelectTrigger id="edit-role" className="w-[180px] bg-white border-2 border-gray-200 text-gray-900">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-gray-200 shadow-lg">
-                    <SelectItem value="ADMIN" className="text-gray-900 hover:bg-gray-50">
-                      Admin
-                    </SelectItem>
-                    <SelectItem value="USER" className="text-gray-900 hover:bg-gray-50">
-                      User
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  disabled
+                  className="bg-gray-100 border-2 border-gray-200 text-gray-600"
+                />
+                <p className="text-xs text-gray-500">
+                  Role cannot be changed here. Use the main admin tools if you need to update roles.
+                </p>
               </div>
             </div>
 

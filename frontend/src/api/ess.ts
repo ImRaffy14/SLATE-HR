@@ -152,6 +152,27 @@ export const getUnreadNotificationCount = async () => {
 };
 
 // ============================================
+// ATTENDANCE (MOCK) FUNCTIONS
+// ============================================
+
+export interface ESSAttendanceRecord {
+  date: string;
+  status: "PRESENT" | "ABSENT" | "LATE";
+  timeIn: string | null;
+  timeOut: string | null;
+  source: string;
+}
+
+export const getEssAttendance = async (): Promise<ESSAttendanceRecord[]> => {
+  try {
+    const result = await axiosInstance.get(`/api/v1/ess/attendance`);
+    return result.data.attendance || [];
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ============================================
 // PERFORMANCE FUNCTIONS
 // ============================================
 

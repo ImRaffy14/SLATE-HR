@@ -48,5 +48,11 @@ router.patch('/notifications/:id/read', bearerAuth, employeeAuth, essController.
 
 router.get('/performance-summary', bearerAuth, employeeAuth, essController.getPerformanceSummary);
 
+// ============================================
+// ATTENDANCE (MOCK) ROUTES
+// ============================================
+
+router.get('/attendance', bearerAuth, employeeAuth, essController.getAttendance);
+
 export default router;
 

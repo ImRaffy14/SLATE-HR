@@ -395,5 +395,61 @@ export class ESSController {
       });
     }
   });
+
+  /**
+   * GET /ess/attendance
+   * Return mock attendance records for the current employee (non-authoritative, for display only)
+   */
+  getAttendance = asyncHandler(async (req: Request, res: Response) => {
+    const employeeId = req.employeeId;
+
+    if (!employeeId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Employee ID is required'
+      });
+    }
+
+    // Generate simple, non-persistent mock attendance for the last 14 days
+    const today = new Date();
+    const records = [];
+
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+
+      // Use a simple hash of employeeId + date to vary status
+      const hashSeed = (employeeId.charCodeAt(0) + i) % 10;
+      let status: 'PRESENT' | 'ABSENT' | 'LATE';
+
+      if (hashSeed < 6) status = 'PRESENT';
+      else if (hashSeed < 8) status = 'LATE';
+      else status = 'ABSENT';
+
+      const dateStr = date.toISOString().split('T')[0];
+      const baseTimeIn = new Date(dateStr + 'T08:00:00Z');
+      const timeIn =
+        status === 'ABSENT'
+          ? null
+          : new Date(baseTimeIn.getTime() + (hashSeed % 3) * 15 * 60 * 1000);
+      const timeOut =
+        status === 'ABSENT'
+          ? null
+          : new Date(baseTimeIn.getTime() + 8 * 60 * 60 * 1000);
+
+      records.push({
+        date: dateStr,
+        status,
+        timeIn: timeIn ? timeIn.toISOString() : null,
+        timeOut: timeOut ? timeOut.toISOString() : null,
+        source: 'External HR 3 Records',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      attendance: records.reverse(), // oldest first
+    });
+  });
 }
 

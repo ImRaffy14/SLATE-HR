@@ -150,6 +150,11 @@ function App() {
           path: "ess/notifications",
           element: <EmployeeSelfService />,
           roles: ["EMPLOYEE"]
+        },
+        {
+          path: "ess/attendance",
+          element: <EmployeeSelfService />,
+          roles: ["EMPLOYEE"]
         }
       ],
     },

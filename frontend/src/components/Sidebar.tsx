@@ -21,7 +21,7 @@ function Sidebar() {
 
   const adminMenuItems = [
     { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
-    { id: "employees", path: "/employees", icon: <UserCheck size={20} />, label: "Employee Management" },
+    { id: "employees", path: "/employees", icon: <UserCheck size={20} />, label: "Employee Records" },
     { id: "learning", path: "/learning", icon: <BookPlus size={20} />, label: "Learning Management" },
     { id: "training", path: "/training", icon: <RailSymbol size={20} />, label: "Training Management" },
     { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
@@ -31,7 +31,7 @@ function Sidebar() {
 
   const userMenuItems = [
     { id: "competencies", path: "/competencies", icon: <FileMinus2 size={20} />, label: "Competency Management" },
-    { id: "employees", path: "/employees", icon: <UserCheck size={20} />, label: "Employee Management" },
+    { id: "employees", path: "/employees", icon: <UserCheck size={20} />, label: "Employee Records" },
     { id: "learning", path: "/learning", icon: <BookPlus size={20} />, label: "Learning Management" },
     { id: "training", path: "/training", icon: <RailSymbol size={20} />, label: "Training Management" },
     { id: "succession", path: "/succession", icon: <LaptopMinimalCheck size={20} />, label: "Succession Planning" },
@@ -44,6 +44,7 @@ function Sidebar() {
     { id: "ess-learning", path: "/ess/learning", icon: <BookPlus size={20} />, label: "Learning" },
     { id: "ess-trainings", path: "/ess/trainings", icon: <GraduationCap size={20} />, label: "Trainings" },
     { id: "ess-achievements", path: "/ess/achievements", icon: <Award size={20} />, label: "Achievements" },
+    { id: "ess-attendance", path: "/ess/attendance", icon: <UserCheck size={20} />, label: "Attendance" },
     // { id: "ess-performance", path: "/ess/performance", icon: <FolderKanban size={20} />, label: "Performance" },
   ]
 

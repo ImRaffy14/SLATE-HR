@@ -50,6 +50,8 @@ import {
   markNotificationRead,
   getPerformanceSummary,
   ESSPerformanceSummaryResponse,
+  getEssAttendance,
+  ESSAttendanceRecord,
 } from "@/api/ess"
 import { getCourses, getCourseContent, markMaterialComplete, submitQuiz, getEmployeeEnrollments, updateEnrollmentProgress } from "@/api/learning"
 import { getTrainings, getEmployeeTrainings, scanQRCode, getTrainingById, getTrainingEnrollments } from "@/api/training"
@@ -61,8 +63,9 @@ import type {
   AchievementUpload,
   Notification,
 } from "@/types/ess"
+import { QRScanner } from "@/components/training/QRScanner"
 
-type ActiveSection = "dashboard" | "career-path" | "learning" | "trainings" | "achievements" | "notifications" | "performance"
+type ActiveSection = "dashboard" | "career-path" | "learning" | "trainings" | "achievements" | "notifications" | "performance" | "attendance"
 
 export default function EmployeeSelfService() {
   const queryClient = useQueryClient()
@@ -78,6 +81,7 @@ export default function EmployeeSelfService() {
     if (path.includes("/trainings")) return "trainings"
     if (path.includes("/achievements")) return "achievements"
     if (path.includes("/notifications")) return "notifications"
+    if (path.includes("/attendance")) return "attendance"
     if (path.includes("/performance")) return "performance"
     return "dashboard"
   }
@@ -96,11 +100,10 @@ export default function EmployeeSelfService() {
   const [calendarDate, setCalendarDate] = useState(new Date())
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false)
   const [selectedTrainingForQR, setSelectedTrainingForQR] = useState<string | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
   const [selectedTrainingDetails, setSelectedTrainingDetails] = useState<string | null>(null)
   const [scannedQRData, setScannedQRData] = useState<string | null>(null)
   const [isAttendanceConfirmOpen, setIsAttendanceConfirmOpen] = useState(false)
+  const [attendanceFilters] = useState<{ status?: "PRESENT" | "ABSENT" | "LATE" | "ALL" }>({ status: "ALL" })
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -274,6 +277,12 @@ export default function EmployeeSelfService() {
     enabled: activeSection === "performance",
   })
 
+  const { data: attendanceData, isLoading: isAttendanceLoading } = useQuery({
+    queryKey: ["ess-attendance"],
+    queryFn: getEssAttendance,
+    enabled: activeSection === "attendance",
+  })
+
   // Enroll in course mutation
   const enrollCourseMutation = useMutation({
     mutationFn: enrollInCourse,
@@ -407,7 +416,6 @@ export default function EmployeeSelfService() {
       // QR code is valid, show confirmation dialog
       setIsQRScannerOpen(false)
       setIsAttendanceConfirmOpen(true)
-      stopQRScanner()
     },
     onError: (error: Error) => {
       toast.error(error.message || "Invalid QR code or QR code expired")
@@ -444,33 +452,6 @@ export default function EmployeeSelfService() {
     enrollTrainingMutation.mutate(trainingId)
   }
 
-  // QR Scanner functions
-  const startQRScanner = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } // Use back camera if available
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.play()
-      }
-    } catch (error) {
-      toast.error("Failed to access camera. Please check permissions.")
-      console.error("Camera access error:", error)
-    }
-  }
-
-  const stopQRScanner = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null
-    }
-  }
-
   const handleQRScan = (qrData: string) => {
     if (selectedTrainingForQR) {
       setScannedQRData(qrData)
@@ -490,36 +471,6 @@ export default function EmployeeSelfService() {
       })
     }
   }
-
-  // QR Code scanning using HTML5 QR Code library or manual input
-  useEffect(() => {
-    if (isQRScannerOpen && videoRef.current) {
-      startQRScanner()
-      
-      // Simple QR code detection using canvas (basic implementation)
-      // For production, consider using a library like html5-qrcode
-      const scanInterval = setInterval(() => {
-        if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
-          const canvas = document.createElement('canvas')
-          canvas.width = videoRef.current.videoWidth
-          canvas.height = videoRef.current.videoHeight
-          const ctx = canvas.getContext('2d')
-          if (ctx && videoRef.current) {
-            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
-            // Note: This is a placeholder - you'd need a QR code library for actual scanning
-            // For now, we'll provide a manual input option
-          }
-        }
-      }, 1000)
-
-      return () => {
-        clearInterval(scanInterval)
-        stopQRScanner()
-      }
-    } else {
-      stopQRScanner()
-    }
-  }, [isQRScannerOpen])
 
   const handleUploadAchievement = () => {
     if (!uploadForm.file || !uploadForm.title.trim()) {
@@ -604,6 +555,8 @@ export default function EmployeeSelfService() {
         return renderNotifications()
       case "performance":
         return renderPerformance()
+      case "attendance":
+        return renderAttendance()
       default:
         return renderDashboard()
     }
@@ -2529,6 +2482,85 @@ export default function EmployeeSelfService() {
     )
   }
 
+  const renderAttendance = () => {
+    const records = (attendanceData || []) as ESSAttendanceRecord[]
+
+    if (isAttendanceLoading) {
+      return <FullPageLoader message="Loading attendance..." showLogo={true} />
+    }
+
+    const filtered = records
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Attendance</CardTitle>
+            <CardDescription>
+              These records are read-only and come from the external attendance system (HR 3 Records).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {records.length === 0 ? (
+              <p className="text-sm text-gray-500">No attendance records available.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Time In</TableHead>
+                      <TableHead>Time Out</TableHead>
+                      <TableHead>Source</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((r) => (
+                      <TableRow key={r.date}>
+                        <TableCell>{new Date(r.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              r.status === "PRESENT"
+                                ? "default"
+                                : r.status === "LATE"
+                                ? "secondary"
+                                : "outline"
+                            }
+                          >
+                            {r.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {r.timeIn
+                            ? new Date(r.timeIn).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {r.timeOut
+                            ? new Date(r.timeOut).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-500">{r.source}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -2762,7 +2794,6 @@ export default function EmployeeSelfService() {
       <Dialog open={isQRScannerOpen} onOpenChange={(open) => {
         setIsQRScannerOpen(open)
         if (!open) {
-          stopQRScanner()
           setSelectedTrainingForQR(null)
           setScannedQRData(null)
         }
@@ -2775,22 +2806,17 @@ export default function EmployeeSelfService() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Camera Preview */}
-            <div className="relative w-full aspect-square bg-black rounded-lg overflow-hidden">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                playsInline
-                muted
+            {/* Camera-based QR Scanner */}
+            <div className="relative w-full aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
+              <QRScanner
+                onScanSuccess={(data) => {
+                  if (selectedTrainingForQR) {
+                    handleQRScan(data)
+                  } else {
+                    toast.error("No training selected for this QR scan.")
+                  }
+                }}
               />
-              {!streamRef.current && (
-                <div className="absolute inset-0 flex items-center justify-center text-white">
-                  <div className="text-center">
-                    <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Camera access required</p>
-                  </div>
-                </div>
-              )}
               {validateQRCodeMutation.isPending && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white">
                   <div className="text-center">
@@ -2820,7 +2846,6 @@ export default function EmployeeSelfService() {
                 variant="outline"
                 onClick={() => {
                   setIsQRScannerOpen(false)
-                  stopQRScanner()
                   setSelectedTrainingForQR(null)
                   setScannedQRData(null)
                 }}

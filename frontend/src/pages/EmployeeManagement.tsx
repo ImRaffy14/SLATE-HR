@@ -331,8 +331,8 @@ export default function EmployeeManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Employee Management</h2>
-          <p className="text-gray-600">Manage employees and job roles</p>
+          <h2 className="text-2xl font-bold text-gray-900">Employee Records</h2>
+          <p className="text-gray-600">View employee records and job roles</p>
         </div>
       </div>
 
@@ -356,12 +356,8 @@ export default function EmployeeManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Employees</CardTitle>
-                  <CardDescription>Manage employee information and job role assignments</CardDescription>
+                  <CardDescription>Employee information is read-only and managed in the main HR system</CardDescription>
                 </div>
-                <Button onClick={handleCreateEmployeeClick} className="gap-2">
-                  <Plus size={16} />
-                  Add Employee
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -447,30 +443,9 @@ export default function EmployeeManagement() {
                               : "—"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical size={16} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewEmployeeClick(emp)}>
-                                  <Eye size={16} className="mr-2" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditEmployeeClick(emp)}>
-                                  <Edit size={16} className="mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteEmployeeClick(emp)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 size={16} className="mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button variant="ghost" size="icon" onClick={() => handleViewEmployeeClick(emp)}>
+                              <Eye size={16} />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -489,12 +464,8 @@ export default function EmployeeManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Job Roles</CardTitle>
-                  <CardDescription>Manage job roles and positions</CardDescription>
+                  <CardDescription>Job roles are read-only and managed in the main HR system</CardDescription>
                 </div>
-                <Button onClick={handleCreateJobRoleClick} className="gap-2">
-                  <Plus size={16} />
-                  Create Job Role
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -526,26 +497,7 @@ export default function EmployeeManagement() {
                             {employees.filter((emp: Employee) => emp.positionId === role.id).length}
                           </TableCell>
                           <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical size={16} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEditJobRoleClick(role)}>
-                                  <Edit size={16} className="mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteJobRoleClick(role)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 size={16} className="mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <span className="text-xs text-gray-400">View only</span>
                           </TableCell>
                         </TableRow>
                       ))
